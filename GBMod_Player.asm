@@ -800,17 +800,18 @@ GBMod_UpdateCommands:
     ld  hl,$40f0
     add l
     ld  l,a
-    ld  a,[hl]
+    jr  nc,:+
+    inc h
+:   ld  a,[hl]
     ld  [GBM_CurrentPattern],a
     xor a
     ld  [GBM_Command1],a
     ld  [GBM_Param1],a
     ld  a,[GBM_SongID]
     inc a
-    ld  b,a
-    ld  a,[GBM_CurrentBank]
-    add b
     ld  [rROMB0],a
+    xor a
+    ld  [GBM_CurrentBank],a
     jp  .done
 .volslide1
     ld  a,[GBM_ModuleSpeed]
@@ -1021,17 +1022,18 @@ GBMod_UpdateCommands:
     ld  hl,$40f0
     add l
     ld  l,a
-    ld  a,[hl]
+    jr  nc,:+
+    inc h
+:   ld  a,[hl]
     ld  [GBM_CurrentPattern],a
     xor a
     ld  [GBM_Command2],a
     ld  [GBM_Param2],a
     ld  a,[GBM_SongID]
     inc a
-    ld  b,a
-    ld  a,[GBM_CurrentBank]
-    add b
     ld  [rROMB0],a
+    xor a
+    ld  [GBM_CurrentBank],a
     jp  .done
 .volslide2
     ld  a,[GBM_ModuleSpeed]
@@ -1243,17 +1245,18 @@ GBMod_UpdateCommands:
     ld  hl,$40f0
     add l
     ld  l,a
-    ld  a,[hl]
+    jr  nc,:+
+    inc h
+:   ld  a,[hl]
     ld  [GBM_CurrentPattern],a
     xor a
     ld  [GBM_Command3],a
     ld  [GBM_Param3],a
     ld  a,[GBM_SongID]
     inc a
-    ld  b,a
-    ld  a,[GBM_CurrentBank]
-    add b
     ld  [rROMB0],a
+    xor a
+    ld  [GBM_CurrentBank],a
     jp  .done
 .dosetfreq3
     ld  a,[GBM_SkipCH3]
@@ -1401,17 +1404,18 @@ GBMod_UpdateCommands:
     ld  hl,$40f0
     add l
     ld  l,a
-    ld  a,[hl]
+    jr  nc,:+
+    inc h
+:   ld  a,[hl]
     ld  [GBM_CurrentPattern],a
     xor a
     ld  [GBM_Command4],a
     ld  [GBM_Param4],a
     ld  a,[GBM_SongID]
     inc a
-    ld  b,a
-    ld  a,[GBM_CurrentBank]
-    add b
     ld  [rROMB0],a
+    xor a
+    ld  [GBM_CurrentBank],a
     jp  .done
 .volslide4
     ld  a,[GBM_ModuleSpeed]
@@ -1937,7 +1941,6 @@ NoiseTable: ; taken from deflemask
     db  $17,$16,$15,$14,$07,$06,$05,$04,$03,$02,$01,$00
 
 include "GBMod_SampleData.asm"
-   
 
 ; shamelessly ripped from Fatass's player
 section "GBMod - Frequency table",romx

@@ -98,7 +98,7 @@ ProductCode:    db  0,0,0,0             ; product code (4 bytes)
 GBCSupport:     db  $80                 ; GBC support (0 = DMG only, $80 = DMG/GBC, $C0 = GBC only)
 NewLicenseCode: db  "DS"                ; new license code (2 bytes)
 SGBSupport:     db  0                   ; SGB support
-CartType:       db  $1b                 ; Cart type, see hardware.inc for a list of values
+CartType:       db  $19                 ; Cart type, see hardware.inc for a list of values
 ROMSize:        ds  1                   ; ROM size (handled by post-linking tool)
 RAMSize:        db  3                   ; RAM size
 DestCode:       db  1                   ; Destination code (0 = Japan, 1 = All others)

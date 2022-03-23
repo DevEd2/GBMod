@@ -770,9 +770,11 @@ DoTimer:
 
 section "Lost In Translation",romx,bank[1]
     incbin  "Modules/LostInTranslation.bin"
-section "Spring",romx,bank[2]
+section "Endless Road",romx,bank[2]
+    incbin  "Modules/EndlessRoad.bin"
+section "Spring",romx,bank[3]
     incbin  "Modules/Spring.bin"
-section "Slime Cave, bank 1",romx,bank[3]
+section "Slime Cave, bank 1",romx,bank[4]
     incbin  "Modules/SlimeCave.bin",0,$4000
-section "Slime Cave, bank 2",romx,bank[4]
+section "Slime Cave, bank 2",romx,bank[5]
     incbin  "Modules/SlimeCave.bin",$4000

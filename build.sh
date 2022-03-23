@@ -4,7 +4,7 @@ set -e
 
 # Build ROM
 python3 xmconv.py Modules/LostInTranslation.xm Modules/LostInTranslation.bin -a "Pigu"
-python3 xmconv.py Modules/Spring.xm Modules/Spring.bin -t 4 -m 168 -a "Faried Verheul"
+python3 xmconv.py Modules/Spring.xm Modules/Spring.bin -t 4 -m 170 -a "Faried Verheul"
 python3 xmconv.py Modules/SlimeCave.xm Modules/SlimeCave.bin -a "Chris Hampton"
 
 echo Assembling...

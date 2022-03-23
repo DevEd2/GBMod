@@ -155,7 +155,6 @@ GBMod_Update:
     dec a
     ld  [GBM_ModuleTimer],a
     jp  nz,GBMod_UpdateCommands
-    xor a
     ld  [GBM_SpeedChanged],a
     ld  a,[GBM_ModuleSpeed]
     ld  [GBM_ModuleTimer],a

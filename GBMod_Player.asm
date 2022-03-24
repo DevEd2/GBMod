@@ -828,13 +828,19 @@ GBMod_UpdateCommands:
     ld  b,a
     ld  a,[GBM_Vol1]
     add b
+    jr  c,:+
+    add b
+    jr  nc,.volslide1_nocarry
+:   ld  a,$f
     jr  .volslide1_nocarry
 .volslide1_dec
     ld  b,a
     ld  a,[GBM_Vol1]
     sub b
+    jr  c,:+
+    sub b
     jr  nc,.volslide1_nocarry
-    xor a
+:   xor a
 .volslide1_nocarry
     ld  [GBM_Vol1],a
     rra
@@ -1050,13 +1056,19 @@ GBMod_UpdateCommands:
     ld  b,a
     ld  a,[GBM_Vol2]
     add b
+    jr  c,:+
+    add b
+    jr  nc,.volslide2_nocarry
+:   ld  a,$f
     jr  .volslide2_nocarry
 .volslide2_dec
     ld  b,a
     ld  a,[GBM_Vol2]
     sub b
+    jr  c,:+
+    sub b
     jr  nc,.volslide2_nocarry
-    xor a
+:   xor a
 .volslide2_nocarry
     ld  [GBM_Vol2],a
     rra
@@ -1432,13 +1444,19 @@ GBMod_UpdateCommands:
     ld  b,a
     ld  a,[GBM_Vol4]
     add b
+    jr  c,:+
+    add b
+    jr  nc,.volslide4_nocarry
+:   ld  a,$f
     jr  .volslide4_nocarry
 .volslide4_dec
     ld  b,a
     ld  a,[GBM_Vol4]
     sub b
+    jr  c,:+
+    sub b
     jr  nc,.volslide4_nocarry
-    xor a
+:   xor a
 .volslide4_nocarry
     ld  [GBM_Vol4],a
     rra

@@ -305,13 +305,7 @@ for i in patpl:
                     note = min(note - 1, 71)
             if 0x10 <= vol <= 0x50:
                 vol = min((vol - 0x10) // 4, 15)
-                # TODO remove this
-                if vol == 0:
-                    if cmd == 0 and par == 0:
-                        cmd = 12
-                        par = 0
-                    else:
-                        vol = 1
+                
             else:
                 vol = 0 if ins == 0 else 15
                 

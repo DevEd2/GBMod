@@ -1935,16 +1935,10 @@ GBM_PulseWaves:
     dw  $4070,$4080,$4090,$40a0
     dw  $40b0,$40c0,$40d0,$40e0
     
-; evil optimization hax for pulse wave data
-; should result in the following:
-; wave_Pulse75:  $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00
-; wave_Pulse50:  $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00
-; wave_Pulse25:  $ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-; wave_Pulse125: $ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-wave_Pulse75:   db  $ff,$ff,$ff,$ff
-wave_Pulse50:   db  $ff,$ff,$ff,$ff
-wave_Pulse25:   db  $ff,$ff
-wave_Pulse125:  db  $ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; last four bytes read from WaveVolumeTable
+wave_Pulse75:   db  $ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00
+wave_Pulse50:   db  $ff,$ff,$ff,$ff,$00,$00,$00,$00,$ff,$ff,$ff,$ff,$00,$00,$00,$00
+wave_Pulse25:   db  $ff,$ff,$00,$00,$00,$00,$00,$00,$ff,$ff,$00,$00,$00,$00,$00,$00
+wave_Pulse125:  db  $ff,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00,$00 ; last four bytes read from WaveVolumeTable
     
 WaveVolTable:   
     db  $00,$00,$00,$00,$60,$60,$60,$60,$40,$40,$40,$40,$20,$20,$20,$20

@@ -221,7 +221,7 @@ MainLoop:
     ld  a,[CurrentSong]
     ld  hl,$9891
     call    DrawHex
-    
+   
     ; playback controls
     ld  a,[sys_btnPress]
     bit btnUp,a
@@ -286,7 +286,7 @@ MainLoop:
     jr  .loadSong
     
 .continue
-    
+    call    CheckInput
     call    DrawSoundVars
     
     halt                ; wait for VBlank
@@ -300,7 +300,7 @@ MainLoop:
 ;    ld  hl,$9a31        ; raster time display address in VRAM
 ;    call    DrawHex     ; draw raster time
     
-    call    CheckInput
+;    call    CheckInput
     
     jp  MainLoop
     
@@ -313,14 +313,21 @@ MainText:
     db  "                    "
     db  "GBMod v2.0 by DevEd "
     db  "  deved8@gmail.com  "
+;    db  "                    "
     db  "                    "
     db  " Current song:  $?? "
+;    db  " Now playing:       "
     db  " ????????????????   "
     db  " Controls:          "
     db  " A........Load song "
     db  " B........Stop song "
     db  " D-pad..Select song "
     db  " Sel.Toggle CPU spd "
+;    db  "                    "
+;    db  "                    "
+;    db  "                    "
+;    db  "                    "
+;    db  "                    "
     db  "                    "
     db  " CH1 ??? V? P? ???? "
     db  " CH2 ??? V? P? ???? "

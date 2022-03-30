@@ -436,7 +436,6 @@ GBMod_Update:
     jr  z,.skipparam2
     cp  $d              ; is command Dxx?
     jr  z,.skipparam2
-    jr  .skipparam2
 :   ld  a,d
     ld  [GBM_Param2],a
 .skipparam2
@@ -501,7 +500,12 @@ GBMod_Update:
     swap    a
     and $f
     jr  z,.skipvol3
+    ld  b,a
+    rla
+    rla
+    rla
     ld  [GBM_Vol3],a
+    ld  a,b
     call    GBMod_GetVol3
     ld  b,a
     ld  a,[GBM_OldVol3]
@@ -1249,7 +1253,7 @@ GBMod_UpdateCommands:
     dw  .ch4            ; 7xy - tremolo (doesn't apply for CH3)
     dw  .pan3           ; 8xy - panning
     dw  .ch4            ; 9xy - sample offset (won't be implemented)
-    dw  .ch4            ; Axy - volume slide (doesn't apply for CH3)
+    dw  .volslide3      ; Axy - volume slide
     dw  .patjump3       ; Bxy - pattern jump
     dw  .ch4            ; Cxy - set volume (won't be implemented)
     dw  .patbreak3      ; Dxy - pattern break
@@ -1370,6 +1374,59 @@ GBMod_UpdateCommands:
     xor a
     ld  [GBM_CurrentBank],a
     jp  .done
+.volslide3
+    ld  a,[GBM_ModuleSpeed]
+    ld  b,a
+    ld  a,[GBM_ModuleTimer]
+    cp  b
+    jr  z,.ch4  ; skip first tick
+    ld  a,[GBM_Param3]
+    cp  $10
+    jr  c,.volslide3_dec
+.volslide3_inc
+    swap    a
+    and $f
+    ld  b,a
+    ld  a,[GBM_Vol3]
+    add b
+    jr  nc,.volslide3_nocarry
+    ld  a,$f
+    jr  .volslide3_nocarry
+.volslide3_dec
+    ld  b,a
+    ld  a,[GBM_Vol3]
+    sub b
+    jr  nc,.volslide3_nocarry
+    xor a
+.volslide3_nocarry
+    ld  [GBM_Vol3],a
+    rra
+    rra
+    rra
+    and $f
+    ld  b,a
+    ld  a,[GBM_SkipCH3]
+    and a
+    jr  nz,.ch4
+    ld  a,b
+    ld  hl,WaveVolTable
+    add l
+    ld  l,a
+    jr  nc,:+
+    inc h
+:   ld  a,[hl]
+    ld  [rNR32],a
+    ld  a,[GBM_Note3]
+    call    GBMod_GetFreq
+    ld  a,[GBM_SkipCH3]
+    and a
+    jr  nz,.ch4
+    ld  a,d
+    ldh [rNR33],a
+    ld  a,e
+;    or  $80
+    ldh [rNR34],a
+    jr  .ch4
 .dosetfreq3
     ld  a,[GBM_SkipCH3]
     and a

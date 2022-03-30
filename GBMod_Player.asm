@@ -96,7 +96,7 @@ GBMod_LoadModule:
     ld  [GBM_CmdTick2],a
     ld  [GBM_CmdTick3],a
     ld  [GBM_CmdTick4],a
-    sub 2
+    ld  a,$ff
     ld  [GBM_PanFlags],a
     
     ld  a,[$40f0]
@@ -259,9 +259,6 @@ GBMod_Update:
     ld  a,[GBM_SkipCH1]
     and a
     jr  nz,.skipvol1
-    ld  a,[GBM_Command1]
-    cp  $a
-    jr  z,.skipvol1
     ld  a,[hl]
     swap    a
     and $f
@@ -294,16 +291,37 @@ GBMod_Update:
     rla
     ldh [rNR11],a
 .skippulse1
+    push    de
     ; ch1 command
     ld  a,[hl+]
     bit 7,h
     call   nz,GBM_HandlePageBoundary 
     ld  [GBM_Command1],a
-    ; ch1 param
+    ld  e,a
+    ; ch1 parameter
     ld  a,[hl+]
+    ld  d,a
     bit 7,h
-    call   nz,GBM_HandlePageBoundary 
+    call   nz,GBM_HandlePageBoundary
+    and a               ; is parameter 00?
+    jr  nz,:+           ; if not, write parameter
+    ld  a,e
+    and a               ; is command 0xy?
+    jr  z,:+
+    cp  $8              ; is command 8xy?
+    jr  z,.skipparam1
+    cp  $a              ; is command Axx?
+    jr  z,.skipparam1
+    cp  $b              ; is command Bxx?
+    jr  z,.skipparam1
+    cp  $c              ; is command Cxx?
+    jr  z,.skipparam1
+    cp  $d              ; is command Dxx?
+    jr  z,.skipparam1
+:   ld  a,d
     ld  [GBM_Param1],a
+.skipparam1
+    pop de
     ; update freq
     ld  a,[GBM_SkipCH1]
     and a
@@ -316,7 +334,7 @@ GBMod_Update:
 .skip1
     pop af
     ld  a,[GBM_Note1]
-    jr  .freq1
+    jp  .freq1
 
 .ch2
     ; ch2 note
@@ -359,9 +377,6 @@ GBMod_Update:
     ld  a,[GBM_SkipCH2]
     and a
     jr  nz,.skipvol2
-    ld  a,[GBM_Command2]
-    cp  $a
-    jr  z,.skipvol2
     ld  a,[hl]
     swap    a
     and $f
@@ -394,16 +409,38 @@ GBMod_Update:
     rla
     ldh [rNR21],a
 .skippulse2
+    push    de
     ; ch2 command
     ld  a,[hl+]
     bit 7,h
     call   nz,GBM_HandlePageBoundary 
     ld  [GBM_Command2],a
-    ; ch2 param
+    ld  e,a
+    ; ch1 parameter
     ld  a,[hl+]
+    ld  d,a
     bit 7,h
-    call   nz,GBM_HandlePageBoundary 
+    call   nz,GBM_HandlePageBoundary
+    and a               ; is parameter 00?
+    jr  nz,:+           ; if not, write parameter
+    ld  a,e
+    and a               ; is command 0xy?
+    jr  z,:+
+    cp  $8              ; is command 8xy?
+    jr  z,.skipparam2
+    cp  $a              ; is command Axx?
+    jr  z,.skipparam2
+    cp  $b              ; is command Bxx?
+    jr  z,.skipparam2
+    cp  $c              ; is command Cxx?
+    jr  z,.skipparam2
+    cp  $d              ; is command Dxx?
+    jr  z,.skipparam2
+    jr  .skipparam2
+:   ld  a,d
     ld  [GBM_Param2],a
+.skipparam2
+    pop de
     ; update freq
     ld  a,[GBM_SkipCH2]
     and a
@@ -416,7 +453,7 @@ GBMod_Update:
 .skip2
     pop af
     ld  a,[GBM_Note2]
-    jr  .freq2
+    jp  .freq2
     
 .ch3
     ; ch3 note
@@ -498,16 +535,37 @@ GBMod_Update:
     set 7,e
     pop hl
 .continue3
+    push    de
     ; ch3 command
     ld  a,[hl+]
     bit 7,h
-    call    nz,GBM_HandlePageBoundary
+    call   nz,GBM_HandlePageBoundary 
     ld  [GBM_Command3],a
-    ; ch3 param
+    ld  e,a
+    ; ch1 parameter
     ld  a,[hl+]
+    ld  d,a
     bit 7,h
-    call    nz,GBM_HandlePageBoundary
+    call   nz,GBM_HandlePageBoundary
+    and a               ; is parameter 00?
+    jr  nz,:+           ; if not, write parameter
+    ld  a,e
+    and a               ; is command 0xy?
+    jr  z,:+
+    cp  $8              ; is command 8xy?
+    jr  z,.skipparam3
+    cp  $a              ; is command Axx?
+    jr  z,.skipparam3
+    cp  $b              ; is command Bxx?
+    jr  z,.skipparam3
+    cp  $c              ; is command Cxx?
+    jr  z,.skipparam3
+    cp  $d              ; is command Dxx?
+    jr  z,.skipparam3
+:   ld  a,d
     ld  [GBM_Param3],a
+.skipparam3
+    pop de
     ; update freq   
     ld  a,[GBM_SkipCH3]
     and a
@@ -551,7 +609,7 @@ GBMod_Update:
     bit 7,h
     call    nz,GBM_HandlePageBoundary
     cp  $ff
-    jr  z,.skip4
+    jp  z,.skip4
     cp  $fe
     jr  nz,.freq4
     xor a
@@ -559,7 +617,7 @@ GBMod_Update:
     ldh [rNR42],a
     ld  a,%10000000
     ldh [rNR44],a
-    jr  .skip4
+    jp  .skip4
     
 .freq4
     ld  [GBM_Note4],a
@@ -579,15 +637,10 @@ GBMod_Update:
     ld  a,[GBM_SkipCH4]
     and a
     jr  nz,.skipvol4
-    inc hl
-    ld  a,[hl]
-    dec hl
-    cp  $a
-    jr  nz,.disablecmd4
-.dovol4
     ld  a,[hl]
     swap    a
     and $f
+    jr  z,.skipvol4
     ld  b,a
     rla
     rla
@@ -596,11 +649,7 @@ GBMod_Update:
     ld  a,b
     swap    a
     ldh [rNR42],a
-    jr  .skipvol4
-.disablecmd4
-    xor a
-    ld  [GBM_Command4],a
-    jr  .dovol4
+    set 7,e
 .skipvol4
     ; ch4 mode
     ld  a,[hl+]
@@ -616,15 +665,36 @@ GBMod_Update:
     set 3,d
 .nomode
     ; ch4 command
+    push    de
     ld  a,[hl+]
     bit 7,h
-    call    nz,GBM_HandlePageBoundary
+    call   nz,GBM_HandlePageBoundary 
     ld  [GBM_Command4],a
-    ; ch4 param
+    ld  e,a
+    ; ch1 parameter
     ld  a,[hl+]
+    ld  d,a
     bit 7,h
-    call    nz,GBM_HandlePageBoundary
+    call   nz,GBM_HandlePageBoundary
+    and a               ; is parameter 00?
+    jr  nz,:+           ; if not, write parameter
+    ld  a,e
+    and a               ; is command 0xy?
+    jr  z,:+
+    cp  $8              ; is command 8xy?
+    jr  z,.skipparam4
+    cp  $a              ; is command Axx?
+    jr  z,.skipparam4
+    cp  $b              ; is command Bxx?
+    jr  z,.skipparam4
+    cp  $c              ; is command Cxx?
+    jr  z,.skipparam4
+    cp  $d              ; is command Dxx?
+    jr  z,.skipparam4
+:   ld  a,d
     ld  [GBM_Param4],a
+.skipparam4
+    pop de
     ; set freq
     ld  a,[GBM_SkipCH4]
     and a
@@ -636,7 +706,7 @@ GBMod_Update:
     jr  .updateRow
 .skip4
     ld  a,[GBM_Note4]
-    jr  .freq4
+    jp  .freq4
     
 .updateRow
     call    GBM_ResetCommandTick
@@ -755,9 +825,19 @@ GBMod_UpdateCommands:
     jp  .dosetfreq1
 .pan1
     ld  a,[GBM_Param1]
-    cpl
-    and $11
-    ld  b,a
+    cp  $55
+    jr  c,.panleft1
+    cp  $aa
+    jr  c,.pancenter1
+.panright1
+    ld  a,$10
+    jr  :+
+.pancenter1
+    xor a
+    jr  :+
+.panleft1
+    ld  a,$01    
+:   ld  b,a
     ld  a,[GBM_PanFlags]
     xor b
     ld  [GBM_PanFlags],a
@@ -982,9 +1062,19 @@ GBMod_UpdateCommands:
     jp  .dosetfreq2
 .pan2
     ld  a,[GBM_Param2]
-    cpl
-    and $11
-    rla
+    cp  $55
+    jr  c,.panleft2
+    cp  $aa
+    jr  c,.pancenter2
+.panright2
+    ld  a,$10
+    jr  :+
+.pancenter2
+    xor a
+    jr  :+
+.panleft2
+    ld  a,$01
+:   rla
     ld  b,a
     ld  a,[GBM_PanFlags]
     xor b
@@ -1211,8 +1301,19 @@ GBMod_UpdateCommands:
     jp  .dosetfreq3
 .pan3
     ld  a,[GBM_Param3]
-    cpl
-    and $11
+    cp  $55
+    jr  c,.panleft3
+    cp  $aa
+    jr  c,.pancenter3
+.panright3
+    ld  a,$10
+    jr  :+
+.pancenter3
+    xor a
+    jr  :+
+.panleft3
+    ld  a,$01
+:   rla
     rla
     ld  b,a
     ld  a,[GBM_PanFlags]
@@ -1371,8 +1472,21 @@ GBMod_UpdateCommands:
     jp  .done
 .pan4
     ld  a,[GBM_Param4]
-    cpl
-    and $11
+    cp  $55
+    jr  c,.panleft4
+    cp  $aa
+    jr  c,.pancenter4
+.panright4
+    ld  a,$10
+    jr  :+
+.pancenter4
+    xor a
+    jr  :+
+.panleft4
+    ld  a,$01
+:   rla
+    rla
+    rla
     ld  b,a
     ld  a,[GBM_PanFlags]
     xor b
@@ -1728,24 +1842,24 @@ GBM_ResetFreqOffset1:
     push    af
     push    hl
     xor a
-    ld  [GBM_Command1],a
-    ld  [GBM_Param1],a
+;    ld  [GBM_Command1],a
+;    ld  [GBM_Param1],a
     ld  hl,GBM_FreqOffset1
     jr  GBM_DoResetFreqOffset
 GBM_ResetFreqOffset2:
     push    af
     push    hl
     xor a
-    ld  [GBM_Command2],a
-    ld  [GBM_Param2],a
+;    ld  [GBM_Command2],a
+;    ld  [GBM_Param2],a
     ld  hl,GBM_FreqOffset2
     jr  GBM_DoResetFreqOffset
 GBM_ResetFreqOffset3:
     push    af
     push    hl
     xor a
-    ld  [GBM_Command3],a
-    ld  [GBM_Param3],a
+;    ld  [GBM_Command3],a
+;    ld  [GBM_Param3],a
     ld  hl,GBM_FreqOffset3
 GBM_DoResetFreqOffset:
     ld  [hl+],a

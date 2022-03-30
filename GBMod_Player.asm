@@ -308,16 +308,20 @@ GBMod_Update:
     ld  a,e
     and a               ; is command 0xy?
     jr  z,:+
-    cp  $8              ; is command 8xy?
+    cp  $1              ; is command 1xy?
     jr  z,.skipparam1
+    cp  $2              ; is command 2xy?
+    jr  z,.skipparam1
+    cp  $8              ; is command 8xy?
+    jr  z,:+
     cp  $a              ; is command Axx?
     jr  z,.skipparam1
     cp  $b              ; is command Bxx?
-    jr  z,.skipparam1
+    jr  z,:+
     cp  $c              ; is command Cxx?
-    jr  z,.skipparam1
-    cp  $d              ; is command Dxx?
-    jr  z,.skipparam1
+    jr  z,:+
+;    cp  $d              ; is command Dxx?
+;    jr  z,:+
 :   ld  a,d
     ld  [GBM_Param1],a
 .skipparam1
@@ -426,16 +430,20 @@ GBMod_Update:
     ld  a,e
     and a               ; is command 0xy?
     jr  z,:+
-    cp  $8              ; is command 8xy?
+    cp  $1              ; is command 1xy?
     jr  z,.skipparam2
+    cp  $2              ; is command 2xy?
+    jr  z,.skipparam2
+    cp  $8              ; is command 8xy?
+    jr  z,:+
     cp  $a              ; is command Axx?
     jr  z,.skipparam2
     cp  $b              ; is command Bxx?
-    jr  z,.skipparam2
+    jr  z,:+
     cp  $c              ; is command Cxx?
-    jr  z,.skipparam2
-    cp  $d              ; is command Dxx?
-    jr  z,.skipparam2
+    jr  z,:+
+;    cp  $d              ; is command Dxx?
+;    jr  z,:+
 :   ld  a,d
     ld  [GBM_Param2],a
 .skipparam2
@@ -556,16 +564,20 @@ GBMod_Update:
     ld  a,e
     and a               ; is command 0xy?
     jr  z,:+
-    cp  $8              ; is command 8xy?
+    cp  $1              ; is command 1xy?
     jr  z,.skipparam3
+    cp  $2              ; is command 2xy?
+    jr  z,.skipparam3
+    cp  $8              ; is command 8xy?
+    jr  z,:+
     cp  $a              ; is command Axx?
     jr  z,.skipparam3
     cp  $b              ; is command Bxx?
-    jr  z,.skipparam3
+    jr  z,:+
     cp  $c              ; is command Cxx?
-    jr  z,.skipparam3
-    cp  $d              ; is command Dxx?
-    jr  z,.skipparam3
+    jr  z,:+
+;    cp  $d              ; is command Dxx?
+;    jr  z,:+
 :   ld  a,d
     ld  [GBM_Param3],a
 .skipparam3
@@ -685,16 +697,20 @@ GBMod_Update:
     ld  a,e
     and a               ; is command 0xy?
     jr  z,:+
-    cp  $8              ; is command 8xy?
+    cp  $1              ; is command 1xy?
     jr  z,.skipparam4
+    cp  $2              ; is command 2xy?
+    jr  z,.skipparam4
+    cp  $8              ; is command 8xy?
+    jr  z,:+
     cp  $a              ; is command Axx?
     jr  z,.skipparam4
     cp  $b              ; is command Bxx?
-    jr  z,.skipparam4
+    jr  z,:+
     cp  $c              ; is command Cxx?
-    jr  z,.skipparam4
-    cp  $d              ; is command Dxx?
-    jr  z,.skipparam4
+    jr  z,:+
+;    cp  $d              ; is command Dxx?
+;    jr  z,:+
 :   ld  a,d
     ld  [GBM_Param4],a
 .skipparam4

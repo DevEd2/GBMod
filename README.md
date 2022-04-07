@@ -4,7 +4,7 @@ XM converter + player for Game Boy
 ## Using GBMod
 Requirements: [Python 3](https://www.python.org/) and a tracker of your choice ([OpenMPT](https://openmpt.org/), [MilkyTracker](https://milkytracker.org/), [FT2 Clone](https://16-bits.org/ft2.php), etc.)
 
-1. Download the easypack [here](https://devnet.sonicgamesdimension.net/GBMod-EasyPack.zip)
+1. Download the easypack [here](http://devnet.sonicgamesdimension.net/GBMod-Easypack.zip)
 
 2. Unzip it
 

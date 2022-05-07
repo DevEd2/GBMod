@@ -274,14 +274,18 @@ NOISE_NOTE_MAP = [ # C D F G#
 ptpos = fou.tell()
 fou.seek(pnum * 3, 1)
 hold = [0] * 16
+p = 0
 for i in patpl:
     rows = len(i)
-    if rows >= 256: rows = 0
+    if rows != 64:
+        print("ERROR: Pattern {}'s size is not 64 rows! Use Dxx instead.".format(p))
+        exit(1)
     fpos = fou.tell()
     fou.seek(ptpos)
     fou.write(struct.pack("<BH", rows, fpos))
     fou.seek(fpos)
     ptpos += 3
+    p += 1
 
     for j in i:
         for k in range(len(j)):

@@ -277,8 +277,11 @@ hold = [0] * 16
 p = 0
 for i in patpl:
     rows = len(i)
-    if rows != 64:
-        print("ERROR: Pattern {}'s size is not 64 rows! Use Dxx instead.".format(p))
+    if rows < 64:
+        print("ERROR: Pattern {}'s size is less than 64 rows! Use D00 to cut the pattern instead.".format(p))
+        exit(1)
+    elif rows > 64:
+        print("ERROR: Pattern {}'s size is greater than 64 rows!".format(p))
         exit(1)
     fpos = fou.tell()
     fou.seek(ptpos)

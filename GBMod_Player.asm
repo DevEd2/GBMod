@@ -874,7 +874,7 @@ GBMod_UpdateCommands:
     ld  a,[GBM_PatTableSize]
     cp  b
     ld  a,b
-    jr  c,:+
+    jr  nc,:+
     ; TODO: loop position
     xor a
 :   ld  [GBM_PatTablePos],a
@@ -1119,7 +1119,7 @@ GBMod_UpdateCommands:
     ld  a,[GBM_PatTableSize]
     cp  b
     ld  a,b
-    jr  c,:+
+    jr  nc,:+
     ; TODO: loop position
     xor a
 :   ld  [GBM_PatTablePos],a
@@ -1366,7 +1366,7 @@ GBMod_UpdateCommands:
     ld  a,[GBM_PatTableSize]
     cp  b
     ld  a,b
-    jr  c,:+
+    jr  nc,:+
     ; TODO: loop position
     xor a
 :   ld  [GBM_PatTablePos],a
@@ -1598,7 +1598,7 @@ GBMod_UpdateCommands:
     ld  a,[GBM_PatTableSize]
     cp  b
     ld  a,b
-    jr  c,:+
+    jr  nc,:+
     ; TODO: loop position
     xor a
 :   ld  [GBM_PatTablePos],a

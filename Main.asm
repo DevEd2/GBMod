@@ -2,6 +2,8 @@
 ; GBMod demo ROM
 ; ================================================================
 
+Easypack    set 0
+
 ; Debug flag
 ; If set to 1, enable debugging features.
 
@@ -206,17 +208,18 @@ ProgramStart:
     ld  a,%10010001         ; LCD on + BG on + BG $8000
     ldh [rLCDC],a           ; enable LCD
     
-    ; Sample implementation for loading a song.
-    ; Replace the 0 in ld a,0 with the ID of the song you want to load.
-    ; Note that invalid values will most likely result in a crash!
-    
-    ld  a,0
+if Easypack==1
+    ld  a,1
+else
+    xor a
+endc
     call    GBM_LoadModule
     call    DrawSongName
     
     ei
     
 MainLoop:
+if  Easypack==0
     ; draw song id
     ld  a,[CurrentSong]
     ld  hl,$9891
@@ -287,6 +290,7 @@ MainLoop:
     
 .continue
     call    CheckInput
+endc
     call    DrawSoundVars
     
     halt                ; wait for VBlank
@@ -309,25 +313,20 @@ MainLoop:
 ; ================================================================
     
 MainText:
+
+if Easypack==1
 ;        ####################
     db  "                    "
     db  "GBMod v2.0 by DevEd "
-    db  "  deved8@gmail.com  "
-;    db  "                    "
     db  "                    "
-    db  " Current song:  $?? "
-;    db  " Now playing:       "
+    db  "                    "
+    db  " Now playing:       "
     db  " ????????????????   "
-    db  " Controls:          "
-    db  " A........Load song "
-    db  " B........Stop song "
-    db  " D-pad..Select song "
-    db  " Sel.Toggle CPU spd "
-;    db  "                    "
-;    db  "                    "
-;    db  "                    "
-;    db  "                    "
-;    db  "                    "
+    db  "                    "
+    db  "                    "
+    db  "                    "
+    db  "                    "
+    db  "                    "
     db  "                    "
     db  " CH1 ??? V? P? ???? "
     db  " CH2 ??? V? P? ???? "
@@ -335,8 +334,29 @@ MainText:
     db  " CH4 $?? V? P? ???? "
     db  "                    "
     db  "                    "
-;    db  " Raster time:   $?? "
 ;        ####################
+else
+;        ####################
+    db  "                    "
+    db  "GBMod v2.0 by DevEd "
+    db  "  deved8@gmail.com  "
+    db  "                    "
+    db  " Current song:  $?? "
+    db  " ????????????????   "
+    db  " Controls:          "
+    db  " A........Load song "
+    db  " B........Stop song "
+    db  " D-pad..Select song "
+    db  " Sel.Toggle CPU spd "
+    db  "                    "
+    db  " CH1 ??? V? P? ???? "
+    db  " CH2 ??? V? P? ???? "
+    db  " CH3 ??? V? P? ???? "
+    db  " CH4 $?? V? P? ???? "
+    db  "                    "
+    db  "                    "
+;        ####################
+endc
 
 Font:   incbin  "Font.1bpp"  ; 1bpp font data
 Font_End:
@@ -774,7 +794,7 @@ DoTimer:
 ; ================================================================
 ; Song data
 ; ================================================================
-
+if Easypack==0
 section "Lost In Translation",romx,bank[1]
     incbin  "Modules/LostInTranslation.bin"
 section "Endless Road",romx,bank[2]
@@ -785,3 +805,4 @@ section "Slime Cave, bank 1",romx,bank[4]
     incbin  "Modules/SlimeCave.bin",0,$4000
 section "Slime Cave, bank 2",romx,bank[5]
     incbin  "Modules/SlimeCave.bin",$4000
+endc

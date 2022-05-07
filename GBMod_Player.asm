@@ -870,7 +870,14 @@ GBMod_UpdateCommands:
     ld  [GBM_CurrentRow],a
     ld  a,[GBM_PatTablePos]
     inc a
-    ld  [GBM_PatTablePos],a
+    ld  b,a
+    ld  a,[GBM_PatTableSize]
+    cp  b
+    ld  a,b
+    jr  c,:+
+    ; TODO: loop position
+    xor a
+:   ld  [GBM_PatTablePos],a
     ld  hl,$40f0
     add l
     ld  l,a
@@ -1108,7 +1115,14 @@ GBMod_UpdateCommands:
     ld  [GBM_CurrentRow],a
     ld  a,[GBM_PatTablePos]
     inc a
-    ld  [GBM_PatTablePos],a
+    ld  b,a
+    ld  a,[GBM_PatTableSize]
+    cp  b
+    ld  a,b
+    jr  c,:+
+    ; TODO: loop position
+    xor a
+:   ld  [GBM_PatTablePos],a
     ld  hl,$40f0
     add l
     ld  l,a
@@ -1348,7 +1362,14 @@ GBMod_UpdateCommands:
     ld  [GBM_CurrentRow],a
     ld  a,[GBM_PatTablePos]
     inc a
-    ld  [GBM_PatTablePos],a
+    ld  b,a
+    ld  a,[GBM_PatTableSize]
+    cp  b
+    ld  a,b
+    jr  c,:+
+    ; TODO: loop position
+    xor a
+:   ld  [GBM_PatTablePos],a
     ld  hl,$40f0
     add l
     ld  l,a
@@ -1573,7 +1594,14 @@ GBMod_UpdateCommands:
     ld  [GBM_CurrentRow],a
     ld  a,[GBM_PatTablePos]
     inc a
-    ld  [GBM_PatTablePos],a
+    ld  b,a
+    ld  a,[GBM_PatTableSize]
+    cp  b
+    ld  a,b
+    jr  c,:+
+    ; TODO: loop position
+    xor a
+:   ld  [GBM_PatTablePos],a
     ld  hl,$40f0
     add l
     ld  l,a

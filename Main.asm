@@ -2,7 +2,7 @@
 ; GBMod demo ROM
 ; ================================================================
 
-Easypack    set 1
+Easypack    set 0
 
 ; Debug flag
 ; If set to 1, enable debugging features.

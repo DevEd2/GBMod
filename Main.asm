@@ -2,16 +2,7 @@
 ; GBMod demo ROM
 ; ================================================================
 
-Easypack    set 0
-
-; Debug flag
-; If set to 1, enable debugging features.
-
-DebugFlag   set 1
-
-; If set to 1, display numbers in decimal instead of hexadecimal.
-
-UseDecimal  set 0
+Easypack   	= 0
 
 ; ================================================================
 ; Project includes

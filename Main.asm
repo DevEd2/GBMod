@@ -2,7 +2,7 @@
 ; GBMod demo ROM
 ; ================================================================
 
-Easypack   	= 0
+Easypack    = 0
 
 ; ================================================================
 ; Project includes
@@ -206,7 +206,9 @@ else
 endc
     call    GBM_LoadModule
     call    DrawSongName
-    
+if Easypack==0
+	call	PrintCPUSpeed
+endc
     ei
     
 MainLoop:
@@ -277,6 +279,7 @@ if  Easypack==0
     jr  .continue
 .toggleSpeed
     call    DoSpeedSwitch
+	call	PrintCPUSpeed
     jr  .loadSong
     
 .continue
@@ -344,16 +347,43 @@ else
     db  " CH2 ??? V? P? ???? "
     db  " CH3 ??? V? P? ???? "
     db  " CH4 $?? V? P? ???? "
-    db  "                    "
+    db  "    ?????? SPEED    "
     db  "                    "
 ;        ####################
 endc
+
+str_Normal:	db	"NORMAL"
+str_Double:	db	"DOUBLE"
 
 Font:   incbin  "Font.1bpp"  ; 1bpp font data
 Font_End:
 
 ; ====================
-; Draw sound variables
+
+PrintCPUSpeed:	
+	ldh		a,[rKEY1]
+	cp		$ff
+	ret		z
+	ld		b,6
+	ld		de,$9a04
+	bit		7,a
+	jr		nz,.double
+.normal
+	ld		hl,str_Normal
+	jr		:+
+.double
+	ld		hl,str_Double
+:	ld		a,[hl+]
+	sub		" " ; convert from ASCII to expected encoding
+	ld		c,a
+	WaitForVRAM
+	ld		a,c
+	ld		[de],a
+	inc		de
+	dec		b
+	jr		nz,:-
+	ret
+
 ; ====================
 
 DrawSoundVars:

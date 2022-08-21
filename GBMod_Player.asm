@@ -1,5 +1,5 @@
 ; ================================================================
-; XM2GB replay routine
+; GBMod replay routine
 ; ================================================================
 
 ; NOTE: For best results, place player code in ROM0.
@@ -66,16 +66,6 @@ GBMod_LoadModule:
 	and 	a
 	jr		z,.vblank
 .timer
-	ld		b,a
-	ldh 	a,[rKEY1]
-	cp		$ff
-	jr		z,.normalspeed
-	bit 	7,a
-	jr		z,.normalspeed
-.doublespeed
-	srl 	b
-.normalspeed
-	ld		a,b
 	ldh 	[rTMA],a
 	ldh 	[rTIMA],a
 	ld		a,[hl]
@@ -132,6 +122,21 @@ GBMod_Update:
 	ld	a,[GBM_DoPlay]
 	and a
 	ret z
+	
+	; adjust timing for GBC double speed
+	ld	a,[GBM_EnableTimer]
+	and	a
+	jr	z,:+	; skip ahead if timer is enabled
+    ldh a,[rKEY1]
+	cp	$ff
+	jr	z,:+
+	bit	7,a
+	jr	z,:+
+	ld	hl,GBM_OddTick
+	inc	[hl]
+	bit	1,[hl]
+	ret	z
+:
 	
 	; anything that needs to be updated on a per-frame basis should be put here
 ;	 ld	 e,0
@@ -2836,6 +2841,7 @@ GBM_SampleCounter:	ds	2
 GBM_EnableTimer:	ds	1
 GBM_TMA:			ds	1
 GBM_TAC:			ds	1
+GBM_OddTick:		ds	1
 GBM_RAM_End:
 
 ; Note values

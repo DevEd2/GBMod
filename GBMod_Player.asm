@@ -1200,7 +1200,7 @@ GBMod_UpdateCommands:
     jr      nz,.ch3
     ld      a,b
     swap    a
-    ld      [rNR22],a
+    ldh     [rNR22],a
     ld      a,[GBM_Note2]
     call    GBMod_GetFreq
     ld      a,[GBM_SkipCH2]
@@ -1446,7 +1446,7 @@ GBMod_UpdateCommands:
     jr      nc,:+
     inc     h
 :   ld      a,[hl]
-    ld      [rNR32],a
+    ldh     [rNR32],a
     ld      a,[GBM_Note3]
     call    GBMod_GetFreq
     ld      a,[GBM_SkipCH3]
@@ -1677,7 +1677,7 @@ GBMod_UpdateCommands:
     jr      nz,.done
     ld      a,b
     swap    a
-    ld      [rNR42],a
+    ldh     [rNR42],a
     ld      a,[GBM_Note4]
     call    GBMod_GetFreq
     ld      a,[GBM_SkipCH4]

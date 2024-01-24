@@ -475,8 +475,8 @@ DrawSoundVars:
     ld  a,[GBM_Note3]
     cp  $ff
     jr  z,.nonote3
-    cp  $80
-    jr  z,.sample3
+;    cp  $80
+;    jr  z,.sample3
     call    GetNoteString
     ld  de,$99c5
     rept    3
@@ -498,16 +498,16 @@ DrawSoundVars:
     ld  [hl+],a
     ld  [hl+],a
     ld  [hl+],a
-    jr  .cont3
-.sample3
-    ldh a,[rSTAT]
-    and 2
-    jr  nz,@-4
-    ld  a,"S"-32
-    ld  [$99c5],a
-    ld  a,[GBM_SampleID]
-    ld  hl,$99c6
-    call    DrawHex
+;    jr  .cont3
+;.sample3
+;    ldh a,[rSTAT]
+;    and 2
+;    jr  nz,@-4
+;    ld  a,"S"-32
+;    ld  [$99c5],a
+;    ld  a,[GBM_SampleID]
+;    ld  hl,$99c6
+;    call    DrawHex
 .cont3
     ld  a,[GBM_Vol3]
     ld  hl,$99ca
@@ -826,4 +826,6 @@ section "Slime Cave, bank 1",romx,bank[4]
     incbin  "Modules/SlimeCave.bin",0,$4000
 section "Slime Cave, bank 2",romx,bank[5]
     incbin  "Modules/SlimeCave.bin",$4000
+section "G-Loop End",romx,bank[6]
+    incbin  "Modules/GLoopEnd.bin"
 endc

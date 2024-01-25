@@ -126,7 +126,7 @@ GBMod_Update:
     ; adjust timing for GBC double speed
     ld      a,[GBM_EnableTimer]
     and     a
-    jr      z,:+    ; skip ahead if timer is enabled
+    jr      z,:+    ; skip ahead if timer is disabled
     ldh     a,[rKEY1]
     cp      $ff
     jr      z,:+
@@ -134,7 +134,7 @@ GBMod_Update:
     jr      z,:+
     ld      hl,GBM_OddTick
     inc     [hl]
-    bit     1,[hl]
+    bit     0,[hl]
     ret     z
 :
     

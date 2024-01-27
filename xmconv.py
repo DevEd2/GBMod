@@ -316,6 +316,8 @@ for i in patpl:
             else:
                 vol = 0 if ins == 0 else 15
                 
+            cmd = cmd & 0xF
+                
             # TODO pattern packing
             outrow.fromlist([note, ins | (vol << 4), cmd, par])
             outrow.tofile(fou)

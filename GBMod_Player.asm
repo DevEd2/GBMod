@@ -428,7 +428,7 @@ GBMod_Update:
     ; ch2 command
     ld      a,[hl+]
     bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    call    nz,GBM_HandlePageBoundary
     ld      [GBM_Command2],a
     ld      e,a
     ; ch2 parameter
@@ -766,6 +766,7 @@ GBMod_UpdateCommands:
     ld      [GBM_PanFlags],a
     ; ch1
     ld      a,[GBM_Command1]
+    and     $f
     ld      hl,.commandTable1
     add     a
     add     l
@@ -1010,6 +1011,7 @@ GBMod_UpdateCommands:
 .novib1
     
     ld      a,[GBM_Command2]
+    and     $f
     ld      hl,.commandTable2
     add     a
     add     l
@@ -1254,6 +1256,7 @@ GBMod_UpdateCommands:
     ldh     [rNR24],a
 .novib2
     ld      a,[GBM_Command3]
+    and     $f
     ld      hl,.commandTable3
     add     a
     add     l
@@ -1501,6 +1504,7 @@ GBMod_UpdateCommands:
 
 
     ld      a,[GBM_Command4]
+    and     $f
     ld      hl,.commandTable4
     add     a
     add     l

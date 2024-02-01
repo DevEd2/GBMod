@@ -758,6 +758,9 @@ GBMod_Update:
     inc     h
 :   ld      a,[hl+]
     ld      [GBM_CurrentPattern],a
+    swap    a
+    and     $f
+    ld      [GBM_CurrentBank],a
 .done
     
 GBMod_UpdateCommands:

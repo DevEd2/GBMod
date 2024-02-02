@@ -510,6 +510,9 @@ DrawSoundVars:
 ;    call    DrawHex
 .cont3
     ld  a,[GBM_Vol3]
+    rra
+    rra
+    rra
     ld  hl,$99ca
     call    DrawHexDigit
     ld  a,[GBM_Wave3]

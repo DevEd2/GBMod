@@ -292,7 +292,7 @@ endc
 ;    ld  hl,$9a31        ; raster time display address in VRAM
 ;    call    DrawHex     ; draw raster time
     
-    call    CheckInput    
+;    call    CheckInput    
     jp  MainLoop
     
 ; ================================================================

@@ -292,8 +292,7 @@ endc
 ;    ld  hl,$9a31        ; raster time display address in VRAM
 ;    call    DrawHex     ; draw raster time
     
-;    call    CheckInput
-    
+    call    CheckInput    
     jp  MainLoop
     
 ; ================================================================
@@ -318,8 +317,8 @@ if Easypack==1
     db  "                    "
     db  " CH1 ??? V? P? ???? "
     db  " CH2 ??? V? P? ???? "
-    db  " CH3 ??? V? P? ???? "
-    db  " CH4 $?? V? P? ???? "
+    db  " CH3 ??? V? W? ???? "
+    db  " CH4 $?? V? N? ???? "
     db  "                    "
     db  "                    "
 ;        ####################
@@ -339,15 +338,15 @@ else
     db  "                    "
     db  " CH1 ??? V? P? ???? "
     db  " CH2 ??? V? P? ???? "
-    db  " CH3 ??? V? P? ???? "
-    db  " CH4 $?? V? P? ???? "
-    db  "    ?????? SPEED    "
+    db  " CH3 ??? V? W? ???? "
+    db  " CH4 $?? V? N? ???? "
+    db  "                    "
     db  "                    "
 ;        ####################
 endc
 
-str_Normal: db  "NORMAL"
-str_Double: db  "DOUBLE"
+str_Normal: db  "NORMAL SPEED"
+str_Double: db  "DOUBLE SPEED"
 
 Font:   incbin  "Font.1bpp"  ; 1bpp font data
 Font_End:
@@ -358,7 +357,7 @@ PrintCPUSpeed:
     ldh     a,[rKEY1]
     cp      $ff
     ret     z
-    ld      b,6
+    ld      b,12
     ld      de,$9a04
     bit     7,a
     jr      nz,.double

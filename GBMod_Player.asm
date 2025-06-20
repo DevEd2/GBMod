@@ -4,6 +4,15 @@
 
 ; NOTE: For best results, place player code in ROM0.
 
+; ===================
+; Compatibility flags
+; ===================
+
+; Whether or not to use "zombie mode" for volume.
+; This makes SFX integration non-trivial and additionally
+; may not work on all hardware models or emulators.
+def USE_ZOMBIE_MODE = 0
+
 ; ===========
 ; Player code
 ; ===========
@@ -41,12 +50,24 @@ GBMod_LoadModule:
     ldh     [rNR51],a   ; all channels to SO1+SO2
     xor     %10001000
     ldh     [rNR50],a   ; master volume 7
+    
+    if USE_ZOMBIE_MODE
+    ; zombie mode init
+    ld      a,$F0
+    ldh     [rNR12],a
+    ldh     [rNR22],a
+    ldh     [rNR42],a
+    ldh     [rNR14],a
+    ldh     [rNR24],a
+    ldh     [rNR44],a
+    ld      a,$18
+    ldh     [rNR12],a
+    ldh     [rNR22],a
+    ldh     [rNR44],a
+    endc
 
     ld      a,[GBM_SongID]
     inc     a
-;   ld      b,a
-;   ld      a,[GBM_CurrentBank]
-;   add     b
     ld      [rROMB0],a
     ld      hl,$4000
     
@@ -144,7 +165,7 @@ GBMod_Update:
 ;    inc     e
 ;    call    GBMod_DoVib ; pulse 2 vibrato
 ;    inc     e
-;    call    GBMod_DoVib ; pulse 3 vibrato
+;    call    GBMod_DoVib ; wave vibrato
 
     ld      a,[GBM_TickTimer]
     dec     a
@@ -161,9 +182,6 @@ GBMod_Update:
     ld      [GBM_ModuleTimer],a
     ld      a,[GBM_SongID]
     inc     a
-;    ld      b,a
-;    ld      a,[GBM_CurrentBank]
-;    add     b
     ld      [rROMB0],a
     ld      hl,GBM_SongDataOffset
     ld      a,[hl+]
@@ -795,8 +813,39 @@ GBMod_UpdateCommands:
     dw      .patjump1       ; Bxy - pattern jump
     dw      .ch2            ; Cxy - set volume (won't be implemented)
     dw      .patbreak1      ; Dxy - pattern break
-    dw      .ch2            ; Exy - extended commands (NYI)
+    dw      .extended1      ; Exy - extended commands
     dw      .speed1         ; Fxy - set module speed
+.commandTableExt1
+    dw      .ch2            ; E0x - unused
+    dw      .ch2            ; E1x - fine portamento up
+    dw      .ch2            ; E2x - fine portamento down
+    dw      .ch2            ; E3x - glissando control
+    dw      .ch2            ; E4x - vibrato waveform
+    dw      .ch2            ; E5x - finetune
+    dw      .ch2            ; E6x - pattern loop
+    dw      .ch2            ; E7x - tremolo waveform
+    dw      .ch2            ; E8x - set panning
+    dw      .ch2            ; E9x - retrigger
+    dw      .ch2            ; EAx - fine volume slide up
+    dw      .ch2            ; EBx - fine volume slide down
+    dw      .ch2            ; ECx - note cut
+    dw      .ch2            ; EDx - note delay
+    dw      .ch2            ; EEx - pattern delay
+    dw      .ch2            ; EFx - unused
+.extended1
+    ld      a,[GBM_Param1]
+    and     $f0
+    swap    a
+    ld      hl,.commandTableExt1
+    add     a
+    add     l
+    ld      l,a
+    jr      nc,:+
+    inc     h
+:   ld      a,[hl+]
+    ld      h,[hl]
+    ld      l,a
+    jp      hl
 .arp1
     ld      a,[GBM_Param1]
     and     a
@@ -1039,8 +1088,39 @@ GBMod_UpdateCommands:
     dw      .patjump2       ; Bxy - pattern jump
     dw      .ch3            ; Cxy - set volume (won't be implemented)
     dw      .patbreak2      ; Dxy - pattern break
-    dw      .ch3            ; Exy - extended commands (NYI)
+    dw      .extended2      ; Exy - extended commands
     dw      .speed2         ; Fxy - set module speed
+.commandTableExt2
+    dw      .ch3            ; E0x - unused
+    dw      .ch3            ; E1x - fine portamento up
+    dw      .ch3            ; E2x - fine portamento down
+    dw      .ch3            ; E3x - glissando control
+    dw      .ch3            ; E4x - vibrato waveform
+    dw      .ch3            ; E5x - finetune
+    dw      .ch3            ; E6x - pattern loop
+    dw      .ch3            ; E7x - tremolo waveform
+    dw      .ch3            ; E8x - set panning
+    dw      .ch3            ; E9x - retrigger
+    dw      .ch3            ; EAx - fine volume slide up
+    dw      .ch3            ; EBx - fine volume slide down
+    dw      .ch3            ; ECx - note cut
+    dw      .ch3            ; EDx - note delay
+    dw      .ch3            ; EEx - pattern delay
+    dw      .ch3            ; EFx - unused
+.extended2
+    ld      a,[GBM_Param2]
+    and     $f0
+    swap    a
+    ld      hl,.commandTableExt1
+    add     a
+    add     l
+    ld      l,a
+    jr      nc,:+
+    inc     h
+:   ld      a,[hl+]
+    ld      h,[hl]
+    ld      l,a
+    jp      hl
 .arp2
     ld      a,[GBM_Param2]
     and     a
@@ -1283,8 +1363,39 @@ GBMod_UpdateCommands:
     dw      .patjump3       ; Bxy - pattern jump
     dw      .ch4            ; Cxy - set volume (won't be implemented)
     dw      .patbreak3      ; Dxy - pattern break
-    dw      .ch4            ; Exy - extended commands (NYI)
+    dw      .extended3      ; Exy - extended commands
     dw      .speed3         ; Fxy - set module speed
+.commandTableExt3
+    dw      .ch4            ; E0x - unused
+    dw      .ch4            ; E1x - fine portamento up
+    dw      .ch4            ; E2x - fine portamento down
+    dw      .ch4            ; E3x - glissando control
+    dw      .ch4            ; E4x - vibrato waveform
+    dw      .ch4            ; E5x - finetune
+    dw      .ch4            ; E6x - pattern loop
+    dw      .ch4            ; E7x - tremolo waveform
+    dw      .ch4            ; E8x - set panning
+    dw      .ch4            ; E9x - retrigger
+    dw      .ch4            ; EAx - fine volume slide up
+    dw      .ch4            ; EBx - fine volume slide down
+    dw      .ch4            ; ECx - note cut
+    dw      .ch4            ; EDx - note delay
+    dw      .ch4            ; EEx - pattern delay
+    dw      .ch4            ; EFx - unused
+.extended3
+    ld      a,[GBM_Param3]
+    and     $f0
+    swap    a
+    ld      hl,.commandTableExt3
+    add     a
+    add     l
+    ld      l,a
+    jr      nc,:+
+    inc     h
+:   ld      a,[hl+]
+    ld      h,[hl]
+    ld      l,a
+    jp      hl
     
 .arp3
     ld      a,[GBM_Param3]
@@ -1530,8 +1641,39 @@ GBMod_UpdateCommands:
     dw      .patjump4       ; Bxy - pattern jump
     dw      .done           ; Cxy - set volume (won't be implemented)
     dw      .patbreak4      ; Dxy - pattern break
-    dw      .done           ; Exy - extended commands (NYI)
+    dw      .extended4      ; Exy - extended commands
     dw      .speed4         ; Fxy - set module speed
+.commandTableExt4
+    dw      .done           ; E0x - unused
+    dw      .done           ; E1x - fine portamento up
+    dw      .done           ; E2x - fine portamento down
+    dw      .done           ; E3x - glissando control
+    dw      .done           ; E4x - vibrato waveform
+    dw      .done           ; E5x - finetune
+    dw      .done           ; E6x - pattern loop
+    dw      .done           ; E7x - tremolo waveform
+    dw      .done           ; E8x - set panning
+    dw      .done           ; E9x - retrigger
+    dw      .done           ; EAx - fine volume slide up
+    dw      .done           ; EBx - fine volume slide down
+    dw      .done           ; ECx - note cut
+    dw      .done           ; EDx - note delay
+    dw      .done           ; EEx - pattern delay
+    dw      .done           ; EFx - unused
+.extended4
+    ld      a,[GBM_Param4]
+    and     $f0
+    swap    a
+    ld      hl,.commandTableExt4
+    add     a
+    add     l
+    ld      l,a
+    jr      nc,:+
+    inc     h
+:   ld      a,[hl+]
+    ld      h,[hl]
+    ld      l,a
+    jp      hl
 .arp4
     ld      a,[GBM_Param4]
     and     a
@@ -2260,6 +2402,10 @@ GBM_SkipCH2:        ds  1
 GBM_SkipCH3:        ds  1
 GBM_SkipCH4:        ds  1
 
+GBM_NoteDelay1:     ds  1
+GBM_NoteDelay2:     ds  1
+GBM_NoteDelay3:     ds  1
+GBM_NoteDelay4:     ds  1
 
 GBM_LastWave:       ds  1
 GBM_WaveBuffer:     ds  16

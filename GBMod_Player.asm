@@ -2027,7 +2027,7 @@ GBM_CopyWave:
     ld      bc,$1030
 .loop
     ld      a,[hl+]
-    ld      [c],a
+    ldh     [c],a
     inc     c
     dec     b
     jr      nz,.loop
@@ -2271,75 +2271,75 @@ GBM_OddTick:        ds  1
 GBM_RAM_End:
 
 ; Note values
-C_2     equ $00
-C#2     equ $01
-D_2     equ $02
-D#2     equ $03
-E_2     equ $04
-F_2     equ $05
-F#2     equ $06
-G_2     equ $07
-G#2     equ $08
-A_2     equ $09
-A#2     equ $0a
-B_2     equ $0b
-C_3     equ $0c
-C#3     equ $0d
-D_3     equ $0e
-D#3     equ $0f
-E_3     equ $10
-F_3     equ $11
-F#3     equ $12
-G_3     equ $13
-G#3     equ $14
-A_3     equ $15
-A#3     equ $16
-B_3     equ $17
-C_4     equ $18
-C#4     equ $19
-D_4     equ $1a
-D#4     equ $1b
-E_4     equ $1c
-F_4     equ $1d
-F#4     equ $1e
-G_4     equ $1f
-G#4     equ $20
-A_4     equ $21
-A#4     equ $22
-B_4     equ $23
-C_5     equ $24
-C#5     equ $25
-D_5     equ $26
-D#5     equ $27
-E_5     equ $28
-F_5     equ $29
-F#5     equ $2a
-G_5     equ $2b
-G#5     equ $2c
-A_5     equ $2d
-A#5     equ $2e
-B_5     equ $2f
-C_6     equ $30
-C#6     equ $31
-D_6     equ $32
-D#6     equ $33
-E_6     equ $34
-F_6     equ $35
-F#6     equ $36
-G_6     equ $37
-G#6     equ $38
-A_6     equ $39
-A#6     equ $3a
-B_6     equ $3b
-C_7     equ $3c
-C#7     equ $3d
-D_7     equ $3e
-D#7     equ $3f
-E_7     equ $40
-F_7     equ $41
-F#7     equ $42
-G_7     equ $43
-G#7     equ $44
-A_7     equ $45
-A#7     equ $46
-B_7     equ $47
+def C_2 equ $00
+def C#2 equ $01
+def D_2 equ $02
+def D#2 equ $03
+def E_2 equ $04
+def F_2 equ $05
+def F#2 equ $06
+def G_2 equ $07
+def G#2 equ $08
+def A_2 equ $09
+def A#2 equ $0a
+def B_2 equ $0b
+def C_3 equ $0c
+def C#3 equ $0d
+def D_3 equ $0e
+def D#3 equ $0f
+def E_3 equ $10
+def F_3 equ $11
+def F#3 equ $12
+def G_3 equ $13
+def G#3 equ $14
+def A_3 equ $15
+def A#3 equ $16
+def B_3 equ $17
+def C_4 equ $18
+def C#4 equ $19
+def D_4 equ $1a
+def D#4 equ $1b
+def E_4 equ $1c
+def F_4 equ $1d
+def F#4 equ $1e
+def G_4 equ $1f
+def G#4 equ $20
+def A_4 equ $21
+def A#4 equ $22
+def B_4 equ $23
+def C_5 equ $24
+def C#5 equ $25
+def D_5 equ $26
+def D#5 equ $27
+def E_5 equ $28
+def F_5 equ $29
+def F#5 equ $2a
+def G_5 equ $2b
+def G#5 equ $2c
+def A_5 equ $2d
+def A#5 equ $2e
+def B_5 equ $2f
+def C_6 equ $30
+def C#6 equ $31
+def D_6 equ $32
+def D#6 equ $33
+def E_6 equ $34
+def F_6 equ $35
+def F#6 equ $36
+def G_6 equ $37
+def G#6 equ $38
+def A_6 equ $39
+def A#6 equ $3a
+def B_6 equ $3b
+def C_7 equ $3c
+def C#7 equ $3d
+def D_7 equ $3e
+def D#7 equ $3f
+def E_7 equ $40
+def F_7 equ $41
+def F#7 equ $42
+def G_7 equ $43
+def G#7 equ $44
+def A_7 equ $45
+def A#7 equ $46
+def B_7 equ $47

@@ -2,7 +2,7 @@
 ; GBMod demo ROM
 ; ================================================================
 
-Easypack    = 0
+def Easypack = 0
 
 ; ================================================================
 ; Project includes
@@ -11,7 +11,7 @@ Easypack    = 0
 include "Variables.asm"
 include "Constants.asm"
 include "Macros.asm"
-include "hardware.inc"
+include "hardware.inc/hardware.inc"
 
 ; ================================================================
 ; Reset vectors (actual ROM starts here)
@@ -66,12 +66,6 @@ IRQ_Joypad:
     reti
 
 ; ================================================================
-; System routines
-; ================================================================
-
-include "SystemRoutines.asm"
-
-; ================================================================
 ; ROM header
 ; ================================================================
 
@@ -97,8 +91,8 @@ RAMSize:        db  0                   ; RAM size
 DestCode:       db  1                   ; Destination code (0 = Japan, 1 = All others)
 OldLicenseCode: db  $33                 ; Old license code (if $33, check new license code)
 ROMVersion:     db  0                   ; ROM version
-HeaderChecksum: ds  1                   ; Header checksum (handled by post-linking tool)
-ROMChecksum:    ds  2                   ; ROM checksum (2 bytes) (handled by post-linking tool)
+HeaderChecksum: db  0                   ; Header checksum (handled by post-linking tool)
+ROMChecksum:    dw  0                   ; ROM checksum (2 bytes) (handled by post-linking tool)
 
 ; ================================================================
 ; Start of program code
@@ -122,7 +116,7 @@ ProgramStart:
     xor a
     ld  bc,$7c80
 ._loop
-    ld  [c],a
+    ldh [c],a
     inc c
     dec b
     jr  nz,._loop
@@ -207,7 +201,7 @@ endc
     call    GBM_LoadModule
     call    DrawSongName
 if Easypack==0
-	call	PrintCPUSpeed
+    call    PrintCPUSpeed
 endc
     ei
     
@@ -279,7 +273,7 @@ if  Easypack==0
     jr  .continue
 .toggleSpeed
     call    DoSpeedSwitch
-	call	PrintCPUSpeed
+    call    PrintCPUSpeed
     jr  .loadSong
     
 .continue
@@ -352,37 +346,37 @@ else
 ;        ####################
 endc
 
-str_Normal:	db	"NORMAL"
-str_Double:	db	"DOUBLE"
+str_Normal: db  "NORMAL"
+str_Double: db  "DOUBLE"
 
 Font:   incbin  "Font.1bpp"  ; 1bpp font data
 Font_End:
 
 ; ====================
 
-PrintCPUSpeed:	
-	ldh		a,[rKEY1]
-	cp		$ff
-	ret		z
-	ld		b,6
-	ld		de,$9a04
-	bit		7,a
-	jr		nz,.double
+PrintCPUSpeed:  
+    ldh     a,[rKEY1]
+    cp      $ff
+    ret     z
+    ld      b,6
+    ld      de,$9a04
+    bit     7,a
+    jr      nz,.double
 .normal
-	ld		hl,str_Normal
-	jr		:+
+    ld      hl,str_Normal
+    jr      :+
 .double
-	ld		hl,str_Double
-:	ld		a,[hl+]
-	sub		" " ; convert from ASCII to expected encoding
-	ld		c,a
-	WaitForVRAM
-	ld		a,c
-	ld		[de],a
-	inc		de
-	dec		b
-	jr		nz,:-
-	ret
+    ld      hl,str_Double
+:   ld      a,[hl+]
+    sub     " " ; convert from ASCII to expected encoding
+    ld      c,a
+    WaitForVRAM
+    ld      a,c
+    ld      [de],a
+    inc     de
+    dec     b
+    jr      nz,:-
+    ret
 
 ; ====================
 
@@ -672,102 +666,102 @@ DoSpeedSwitch:
     ret
 
 
-; Input: hl = palette data	
+; Input: hl = palette data  
 LoadBGPal:
-	ld	a,0
-	call	LoadBGPalLine
-	ld	a,1
-	call	LoadBGPalLine
-	ld	a,2
-	call	LoadBGPalLine
-	ld	a,3
-	call	LoadBGPalLine
-	ld	a,4
-	call	LoadBGPalLine
-	ld	a,5
-	call	LoadBGPalLine
-	ld	a,6
-	call	LoadBGPalLine
-	ld	a,7
-	call	LoadBGPalLine
-	ret
-	
-; Input: hl = palette data	
+    ld  a,0
+    call    LoadBGPalLine
+    ld  a,1
+    call    LoadBGPalLine
+    ld  a,2
+    call    LoadBGPalLine
+    ld  a,3
+    call    LoadBGPalLine
+    ld  a,4
+    call    LoadBGPalLine
+    ld  a,5
+    call    LoadBGPalLine
+    ld  a,6
+    call    LoadBGPalLine
+    ld  a,7
+    call    LoadBGPalLine
+    ret
+    
+; Input: hl = palette data  
 LoadObjPal:
-	ld	a,0
-	call	LoadObjPalLine
-	ld	a,1
-	call	LoadObjPalLine
-	ld	a,2
-	call	LoadObjPalLine
-	ld	a,3
-	call	LoadObjPalLine
-	ld	a,4
-	call	LoadObjPalLine
-	ld	a,5
-	call	LoadObjPalLine
-	ld	a,6
-	call	LoadObjPalLine
-	ld	a,7
-	call	LoadObjPalLine
-	ret
-	
+    ld  a,0
+    call    LoadObjPalLine
+    ld  a,1
+    call    LoadObjPalLine
+    ld  a,2
+    call    LoadObjPalLine
+    ld  a,3
+    call    LoadObjPalLine
+    ld  a,4
+    call    LoadObjPalLine
+    ld  a,5
+    call    LoadObjPalLine
+    ld  a,6
+    call    LoadObjPalLine
+    ld  a,7
+    call    LoadObjPalLine
+    ret
+    
 ; Input: hl = palette data
 LoadBGPalLine:
-	swap	a	; \  multiply
-	rrca		; /  palette by 8
-	or	$80		; auto increment
-	push	af
-	WaitForVRAM
-	pop	af
-	ld	[rBCPS],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ld	a,[hl+]
-	ld	[rBCPD],a
-	ret
-	
+    swap    a   ; \  multiply
+    rrca        ; /  palette by 8
+    or  $80     ; auto increment
+    push    af
+    WaitForVRAM
+    pop af
+    ld  [rBCPS],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ld  a,[hl+]
+    ld  [rBCPD],a
+    ret
+    
 ; Input: hl = palette data
 LoadObjPalLine:
-	swap	a	; \  multiply
-	rrca		; /  palette by 8
-	or	$80		; auto increment
-	push	af
-	WaitForVRAM
-	pop	af
-	ld	[rOCPS],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ld	a,[hl+]
-	ld	[rOCPD],a
-	ret
+    swap    a   ; \  multiply
+    rrca        ; /  palette by 8
+    or  $80     ; auto increment
+    push    af
+    WaitForVRAM
+    pop af
+    ld  [rOCPS],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ld  a,[hl+]
+    ld  [rOCPD],a
+    ret
 
 Pal_Grayscale:
-	dw	$7fff,$6e94,$354a,$0000
+    dw  $7fff,$6e94,$354a,$0000
 
 ; ================================================================
 ; SRAM routines
@@ -808,6 +802,8 @@ DoTimer:
     pop     bc
 :   pop     af
     reti
+
+    include "SystemRoutines.asm"
 
 ; ================================================================
 ; Sound driver

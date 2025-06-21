@@ -160,12 +160,12 @@ GBMod_Update:
 :
     
     ; anything that needs to be updated on a per-frame basis should be put here
-;    ld      e,0
-;    call    GBMod_DoVib ; pulse 1 vibrato
-;    inc     e
-;    call    GBMod_DoVib ; pulse 2 vibrato
-;    inc     e
-;    call    GBMod_DoVib ; wave vibrato
+    ld      e,0
+    call    GBMod_DoVib ; pulse 1 vibrato
+    inc     e
+    call    GBMod_DoVib ; pulse 2 vibrato
+    inc     e
+    call    GBMod_DoVib ; wave vibrato
 
     ld      a,[GBM_TickTimer]
     dec     a
@@ -781,62 +781,57 @@ GBMod_Update:
     ld      [GBM_CurrentBank],a
 .done
     
-GBMod_UpdateCommands:
-    ld      a,$ff
-    ld      [GBM_PanFlags],a
-    ; ch1
-    ld      a,[GBM_Command1]
-    ld      hl,.commandTable1
+macro gbm_command_update
+    ld      a,[GBM_Command\1]
+    ld      hl,.commandTable\1
     add     a
-    add     l
-    ld      l,a
-    jr      nc,.nocarry1
-    inc     h
-.nocarry1
+    ld      c,a
+    ld      b,0
+    add     hl,bc
     ld      a,[hl+]
     ld      h,[hl]
     ld      l,a
     jp      hl
     
-.commandTable1
-    dw      .arp1           ; 0xy - arp
-    dw      .slideup1       ; 1xy - note slide up
-    dw      .slidedown1     ; 2xy - note slide down
-    dw      .ch2            ; 3xy - portamento (NYI)
-    dw      .ch2            ; 4xy - vibrato (handled elsewhere)
-    dw      .ch2            ; 5xy - portamento + volume slide (NYI)
-    dw      .ch2            ; 6xy - vibrato + volume slide (NYI)
-    dw      .ch2            ; 7xy - tremolo (NYI)
-    dw      .pan1           ; 8xy - panning
-    dw      .ch2            ; 9xy - sample offset (won't be implemented)
-    dw      .volslide1      ; Axy - volume slide
-    dw      .patjump1       ; Bxy - pattern jump
-    dw      .ch2            ; Cxy - set volume (won't be implemented)
-    dw      .patbreak1      ; Dxy - pattern break
-    dw      .extended1      ; Exy - extended commands
-    dw      .speed1         ; Fxy - set module speed
-.commandTableExt1
-    dw      .ch2            ; E0x - unused
-    dw      .ch2            ; E1x - fine portamento up
-    dw      .ch2            ; E2x - fine portamento down
-    dw      .ch2            ; E3x - glissando control
-    dw      .ch2            ; E4x - vibrato waveform
-    dw      .ch2            ; E5x - finetune
-    dw      .ch2            ; E6x - pattern loop
-    dw      .ch2            ; E7x - tremolo waveform
-    dw      .ch2            ; E8x - set panning
-    dw      .ch2            ; E9x - retrigger
-    dw      .ch2            ; EAx - fine volume slide up
-    dw      .ch2            ; EBx - fine volume slide down
-    dw      .ch2            ; ECx - note cut
-    dw      .ch2            ; EDx - note delay
-    dw      .ch2            ; EEx - pattern delay
-    dw      .ch2            ; EFx - unused
-.extended1
-    ld      a,[GBM_Param1]
+.commandTable\1
+    dw      .arp\1              ; 0xy - arp
+    dw      .slideup\1          ; 1xy - note slide up
+    dw      .slidedown\1        ; 2xy - note slide down
+    dw      .portamento\1       ; 3xy - portamento 
+    dw      .vibrato\1          ; 4xy - vibrato (handled elsewhere)
+    dw      .portavol\1         ; 5xy - portamento + volume slide
+    dw      .vibvol\1           ; 6xy - vibrato + volume slide
+    dw      .tremolo\1          ; 7xy - tremolo
+    dw      .pan\1              ; 8xy - panning
+    dw      .donech\1           ; 9xy - sample offset (won't be implemented)
+    dw      .volslide\1         ; Axy - volume slide
+    dw      .patjump\1          ; Bxy - pattern jump
+    dw      .donech\1           ; Cxy - set volume (won't be implemented)
+    dw      .patbreak\1         ; Dxy - pattern break
+    dw      .extended\1         ; Exy - extended commands
+    dw      .speed\1            ; Fxy - set module speed
+.commandTableExt\1
+    dw      .donech\1           ; E0x - unused
+    dw      .fineportaup\1      ; E1x - fine portamento up
+    dw      .fineportadown\1    ; E2x - fine portamento down
+    dw      .glissando\1        ; E3x - glissando control
+    dw      .vibwave\1          ; E4x - vibrato waveform
+    dw      .finetune\1         ; E5x - finetune
+    dw      .patloop\1          ; E6x - pattern loop
+    dw      .tremwave\1         ; E7x - tremolo waveform
+    dw      .coarsepan\1        ; E8x - set panning
+    dw      .retrig\1           ; E9x - retrigger
+    dw      .finevolup\1        ; EAx - fine volume slide up
+    dw      .finevoldown\1      ; EBx - fine volume slide down
+    dw      .notecut\1          ; ECx - note cut
+    dw      .notedelay\1        ; EDx - note delay
+    dw      .patdelay\1         ; EEx - pattern delay
+    dw      .donech\1           ; EFx - unused
+.extended\1
+    ld      a,[GBM_Param\1]
     and     $f0
     swap    a
-    ld      hl,.commandTableExt1
+    ld      hl,.commandTableExt\1
     add     a
     add     l
     ld      l,a
@@ -846,349 +841,229 @@ GBMod_UpdateCommands:
     ld      h,[hl]
     ld      l,a
     jp      hl
-.arp1
-    ld      a,[GBM_Param1]
+
+; 0xy - arpeggio 
+.arp\1
+    ld      a,[GBM_Param\1]
     and     a
-    jp      z,.ch2
-    ld      a,[GBM_ArpTick1]
+    jp      z,.donech\1
+    ld      a,[GBM_ArpTick\1]
     inc     a
     cp      4
-    jr      nz,.noresetarp1
+    jr      nz,.noresetarp\1
     ld      a,1
-.noresetarp1
-    ld      [GBM_ArpTick1],a
-    ld      a,[GBM_Param1]
+.noresetarp\1
+    ld      [GBM_ArpTick\1],a
+    ld      a,[GBM_Param\1]
     ld      b,a
-    ld      a,[GBM_Note1]
+    ld      a,[GBM_Note\1]
     ld      c,a
-    ld      a,[GBM_ArpTick1]
+    ld      a,[GBM_ArpTick\1]
     dec     a
-    call        GBMod_DoArp
-    ld      a,[GBM_SkipCH1]
+    call    GBMod_DoArp
+    ld      a,[GBM_SkipCH\1]
     and     a
-    jp      nz,.ch2
+    jp      nz,.donech\1
     ld      a,d
-    ldh     [rNR13],a
+    ldh     [rNR\13],a
     ld      a,e
-    ldh     [rNR14],a
-    jp      .ch2
-.slideup1
-    ld      a,[GBM_Param1]
-    ld      b,a
-    ld      e,0
-    call    GBMod_DoPitchSlide
-    ld      a,[GBM_Note1]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq1
-.slidedown1
-    ; read tick speed
-    ld      a,[GBM_Param1]
-    ld      b,a
-    ld      e,0
-    call    GBMod_DoPitchSlide
-    ld      a,[GBM_Note1]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq1
-.pan1
-    ld      a,[GBM_Param1]
+    ldh     [rNR\14],a
+    jp      .donech\1
+    
+; 1xx - slide up
+.slideup\1
+        if \1 != 4
+        ld      a,[GBM_Param\1]
+        ld      b,a
+        ld      e,(\1 - 1)
+        call    GBMod_DoPitchSlide
+        ld      a,[GBM_Note\1]
+        call    GBMod_GetFreq2
+        jp      .dosetfreq\1
+    endc
+    
+; 2xx - slide down
+.slidedown\1
+    if \1 != 4
+        ld      a,[GBM_Param\1]
+        ld      b,a
+        ld      e,(\1 - 1)
+        call    GBMod_DoPitchSlide
+        ld      a,[GBM_Note\1]
+        call    GBMod_GetFreq2
+        jp      .dosetfreq\1
+    endc
+
+; 3xx - portamento
+.portamento\1
+    if \1 != 4
+        ; TODO
+        jp      .donech\1
+    endc
+
+; 4xy - arpeggio
+.vibrato\1
+    if \1 != 4
+        ; TODO
+        jp      .donech\1
+    endc
+
+; 5xy - portamento + volume slide
+.portavol\1
+    if \1 != 4
+        ; TODO
+        jp      .donech\1
+    endc
+
+; 6xy - vibrato + volume slide
+.vibvol\1
+    if \1 != 4
+        ; TODO
+        jp      .donech\1
+    endc
+
+.dosetfreq\1
+    if \1 != 4
+        ld      a,[GBM_SkipCH\1]
+        and     a
+        jp      nz,.donech\1
+        ld      a,d
+        ldh     [rNR\13],a
+        ld      a,e
+        ldh     [rNR\14],a
+    endc
+    jp      .donech\1
+    
+; 7xy - tremolo
+.tremolo\1
+    ; TODO
+    jp      .donech1
+
+; 8xy - panning
+.pan\1
+    ld      a,[GBM_Param\1]
     cp      $55
-    jr      c,.panleft1
+    jr      c,.panleft\1
     cp      $aa
-    jr      c,.pancenter1
-.panright1
-    ld      a,$10
+    jr      c,.pancenter\1
+.panright\1
+    ld      a,$10  << (\1 - 1)
     jr      :+
-.pancenter1
+.pancenter\1
     xor     a
     jr      :+
-.panleft1
-    ld      a,$01    
+.panleft\1
+    ld      a,$01 << (\1 - 1)
 :   ld      b,a
     ld      a,[GBM_PanFlags]
     xor     b
     ld      [GBM_PanFlags],a
-    jp      .ch2
-.patbreak1
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    ld      a,[GBM_Param1]
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_PatTablePos]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_PatTableSize]
-    cp      b
-    ld      a,b
-    jr      nz,:+
-    ; TODO: loop position
-    xor     a
-:   ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command1],a
-    ld      [GBM_Param1],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_CurrentBank]
-    add     b
-    ld      [rROMB0],a
-    jp      .done
-.patjump1
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_Param1]
-    ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command1],a
-    ld      [GBM_Param1],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentBank],a
-    jp      .done
-.volslide1
+    jp      .donech\1
+
+; 9xx - sample offset (won't be implemented)
+
+; Axx - volume slide
+.volslide\1
     ld      a,[GBM_ModuleSpeed]
     ld      b,a
     ld      a,[GBM_ModuleTimer]
     cp      b
-    jr      z,.ch2  ; skip first tick
-    
-    ld      a,[GBM_Param1]
+    jp      z,.donech\1  ; skip first tick
+    ld      a,[GBM_Param\1]
     cp      $10
-    jr      c,.volslide1_dec
-.volslide1_inc
+    jr      c,.volslide\1_dec
+.volslide\1_inc
     swap    a
     and     $f
     ld      b,a
-    ld      a,[GBM_Vol1]
+    ld      a,[GBM_Vol\1]
     add     b
     jr      c,:+
     add     b
-    jr      nc,.volslide1_nocarry
+    jr      nc,.volslide\1_nocarry
 :   ld      a,$f
-    jr      .volslide1_nocarry
-.volslide1_dec
+    jr      .volslide\1_nocarry
+.volslide\1_dec
     ld      b,a
-    ld      a,[GBM_Vol1]
+    ld      a,[GBM_Vol\1]
     sub     b
     jr      c,:+
     sub     b
-    jr      nc,.volslide1_nocarry
+    jr      nc,.volslide\1_nocarry
 :   xor     a
-.volslide1_nocarry
-    ld      [GBM_Vol1],a
+.volslide\1_nocarry
+    ld      [GBM_Vol\1],a
+    ld      b,a
+    ld      a,[GBM_SkipCH\1]
+    and     a
+    jp      nz,.donech\1
+    ld      a,b
     rra
     rra
     rra
     and     $f
-    ld      b,a
-    ld      a,[GBM_SkipCH1]
-    and     a
-    jr      nz,.ch2
-    ld      a,b
-    swap    a
-    ldh     [rNR12],a
-    ld      a,[GBM_Note1]
-    call    GBMod_GetFreq
-    ld      a,[GBM_SkipCH1]
-    and     a
-    jr      nz,.ch2
-    ld      a,d
-    ldh     [rNR13],a
-    ld      a,e
-    or      $80
-    ldh     [rNR14],a
-    jr      .ch2
-.dosetfreq1
-    ld      a,[GBM_SkipCH1]
-    and     a
-    jr      nz,.ch2
-    ld      a,d
-    ldh     [rNR13],a
-    ld      a,e
-    ldh     [rNR14],a
-    jr      .ch2
-.speed1
-    ld      a,[GBM_SpeedChanged]
-    and     a
-    jr      nz,.ch2
-    ld      a,[GBM_Param1]
-    ld      [GBM_ModuleSpeed],a
-    ld      [GBM_ModuleTimer],a
-    ld      a,1
-    ld      [GBM_SpeedChanged],a
-    
-.ch2
-    ld      a,[GBM_Command1]
-    cp      4
-    jr      nz,.novib1
-    ld      a,[GBM_Note1]
-    call    GBMod_GetFreq
-    ld      h,d
-    ld      l,e
-    ld      a,[GBM_FreqOffset1]
-    add     h
-    ld      h,a
-    jr      nc,.continue1
-    inc     l
-.continue1
-    ld      a,[GBM_SkipCH1]
-    and     a
-    jr      nz,.novib1
-    ld      a,h
-    ldh     [rNR13],a
-    ld      a,l
-    ldh     [rNR14],a
-.novib1
-    
-    ld      a,[GBM_Command2]
-    ld      hl,.commandTable2
-    add     a
-    add     l
-    ld      l,a
-    jr      nc,.nocarry2
-    inc     h
-.nocarry2
-    ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
-    
-.commandTable2
-    dw      .arp2           ; 0xy - arp
-    dw      .slideup2       ; 1xy - note slide up
-    dw      .slidedown2     ; 2xy - note slide down
-    dw      .ch3            ; 3xy - portamento (NYI)
-    dw      .ch3            ; 4xy - vibrato (handled elsewhere)
-    dw      .ch3            ; 5xy - portamento + volume slide (NYI)
-    dw      .ch3            ; 6xy - vibrato + volume slide (NYI)
-    dw      .ch3            ; 7xy - tremolo (NYI)
-    dw      .pan2           ; 8xy - panning
-    dw      .ch3            ; 9xy - sample offset (won't be implemented)
-    dw      .volslide2      ; Axy - volume slide
-    dw      .patjump2       ; Bxy - pattern jump
-    dw      .ch3            ; Cxy - set volume (won't be implemented)
-    dw      .patbreak2      ; Dxy - pattern break
-    dw      .extended2      ; Exy - extended commands
-    dw      .speed2         ; Fxy - set module speed
-.commandTableExt2
-    dw      .ch3            ; E0x - unused
-    dw      .ch3            ; E1x - fine portamento up
-    dw      .ch3            ; E2x - fine portamento down
-    dw      .ch3            ; E3x - glissando control
-    dw      .ch3            ; E4x - vibrato waveform
-    dw      .ch3            ; E5x - finetune
-    dw      .ch3            ; E6x - pattern loop
-    dw      .ch3            ; E7x - tremolo waveform
-    dw      .ch3            ; E8x - set panning
-    dw      .ch3            ; E9x - retrigger
-    dw      .ch3            ; EAx - fine volume slide up
-    dw      .ch3            ; EBx - fine volume slide down
-    dw      .ch3            ; ECx - note cut
-    dw      .ch3            ; EDx - note delay
-    dw      .ch3            ; EEx - pattern delay
-    dw      .ch3            ; EFx - unused
-.extended2
-    ld      a,[GBM_Param2]
-    and     $f0
-    swap    a
-    ld      hl,.commandTableExt1
-    add     a
+    if \1 != 3
+        swap    a
+        ldh     [rNR\12],a
+        if \1 != 4
+            ld      a,[GBM_Note\1]
+            call    GBMod_GetFreq
+            ld      a,d
+            ldh     [rNR\13],a
+            ld      a,e
+            or      $80
+        else
+            ld      a,$80
+        endc
+        ldh     [rNR\14],a
+    else
+        ld      c,a
+        ld      b,0
+        ld      hl,WaveVolTable
+        add     hl,bc
+        ld      a,[hl]
+        ldh     [rNR\12],a
+        ld      a,d
+        ldh     [rNR\13],a
+        ld      a,e
+        ldh     [rNR\14],a
+    endc
+    jp      .donech\1
+
+; Bxx - pattern jump
+.patjump\1
+    ld      a,[GBM_SongID]
+    inc     a
+    ld      [rROMB0],a
+    xor     a
+    ld      [GBM_CurrentRow],a
+    ld      a,[GBM_Param\1]
+    ld      [GBM_PatTablePos],a
+    ld      hl,$40f0
     add     l
     ld      l,a
     jr      nc,:+
     inc     h
-:   ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
-.arp2
-    ld      a,[GBM_Param2]
-    and     a
-    jp      z,.ch3
-    ld      a,[GBM_ArpTick2]
-    inc     a
-    cp      4
-    jr      nz,.noresetarp2
-    ld      a,1
-.noresetarp2
-    ld      [GBM_ArpTick2],a
-    ld      a,[GBM_Param2]
-    ld      b,a
-    ld      a,[GBM_Note2]
-    ld      c,a
-    ld      a,[GBM_ArpTick2]
-    dec     a
-    call    GBMod_DoArp
-    ld      a,[GBM_SkipCH2]
-    and     a
-    jp      nz,.ch3
-    ld      a,d
-    ldh     [rNR23],a
-    ld      a,e
-    ldh     [rNR24],a
-    jp      .ch3
-.slideup2
-    ld      a,[GBM_Param2]
-    ld      b,a
-    ld      e,1
-    call    GBMod_DoPitchSlide
-    ld      a,[GBM_Note2]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq2
-.slidedown2
-    ; read tick speed
-    ld      a,[GBM_Param2]
-    ld      b,a
-    ld      e,1
-    call    GBMod_DoPitchSlide
-    ld      a,[GBM_Note2]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq2
-.pan2
-    ld      a,[GBM_Param2]
-    cp      $55
-    jr      c,.panleft2
-    cp      $aa
-    jr      c,.pancenter2
-.panright2
-    ld      a,$10
-    jr      :+
-.pancenter2
+:   ld      a,[hl]
+    ld      [GBM_CurrentPattern],a
     xor     a
-    jr      :+
-.panleft2
-    ld      a,$01
-:   rla 
-    ld      b,a
-    ld      a,[GBM_PanFlags]
-    xor     b
-    ld      [GBM_PanFlags],a
-    jp      .ch3
-.patbreak2
+    ld      [GBM_Command\1],a
+    ld      [GBM_Param\1],a
     ld      a,[GBM_SongID]
     inc     a
     ld      [rROMB0],a
-    ld      a,[GBM_Param2]
+    xor     a
+    ld      [GBM_CurrentBank],a
+    jp      .done
+
+; Cxx - set volume (won't be implemented)
+
+; Dxx - pattern break
+.patbreak\1
+    ld      a,[GBM_SongID]
+    inc     a
+    ld      [rROMB0],a
+    ld      a,[GBM_Param\1]
     ld      [GBM_CurrentRow],a
     ld      a,[GBM_PatTablePos]
     inc     a
@@ -1208,8 +1083,8 @@ GBMod_UpdateCommands:
 :   ld      a,[hl]
     ld      [GBM_CurrentPattern],a
     xor     a
-    ld      [GBM_Command2],a
-    ld      [GBM_Param2],a
+    ld      [GBM_Command\1],a
+    ld      [GBM_Param\1],a
     ld      a,[GBM_SongID]
     inc     a
     ld      b,a
@@ -1217,637 +1092,146 @@ GBMod_UpdateCommands:
     add     b
     ld      [rROMB0],a
     jp      .done
-.patjump2
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_Param2]
-    ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command2],a
-    ld      [GBM_Param2],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentBank],a
-    jp      .done
-.volslide2
-    ld      a,[GBM_ModuleSpeed]
-    ld      b,a
-    ld      a,[GBM_ModuleTimer]
-    cp      b
-    jr      z,.ch3  ; skip first tick
 
-    ld      a,[GBM_Param2]
-    cp      $10
-    jr      c,.volslide2_dec
-.volslide2_inc
-    swap    a
-    and     $f
-    ld      b,a
-    ld      a,[GBM_Vol2]
-    add     b
-    jr      c,:+
-    add     b
-    jr      nc,.volslide2_nocarry
-:   ld      a,$f
-    jr      .volslide2_nocarry
-.volslide2_dec
-    ld      b,a
-    ld      a,[GBM_Vol2]
-    sub     b
-    jr      c,:+
-    sub     b
-    jr      nc,.volslide2_nocarry
-:   xor     a
-.volslide2_nocarry
-    ld      [GBM_Vol2],a
-    rra
-    rra
-    rra
-    and     $f
-    ld      b,a
-    ld      a,[GBM_SkipCH2]
-    and     a
-    jr      nz,.ch3
-    ld      a,b
-    swap    a
-    ldh     [rNR22],a
-    ld      a,[GBM_Note2]
-    call    GBMod_GetFreq
-    ld      a,[GBM_SkipCH2]
-    and     a
-    jr      nz,.ch3
-    ld      a,d
-    ldh     [rNR23],a
-    ld      a,e
-    or      $80
-    ldh     [rNR24],a
-    jr      .ch3
-.dosetfreq2
-    ld      a,[GBM_SkipCH2]
-    and     a
-    jr      nz,.ch3
-    ld      a,d
-    ldh     [rNR23],a
-    ld      a,e
-    ldh     [rNR24],a
-    jr      .ch3
-.speed2
+; E0x - unused
+
+; E1x - fine portamento up
+.fineportaup\1
+    if \1 != 4
+        ; TODO
+    endc
+    jp      .donech\1
+
+; E2x - fine portamento down
+.fineportadown\1
+    if \1 != 4
+        ; TODO
+    endc
+    jp      .donech\1
+
+; E3x - glissando control
+.glissando\1
+    if \1 != 4
+        ; TODO
+    endc
+    jp      .donech\1
+
+; E4x - vibrato waveform
+.vibwave\1
+    if \1 != 4
+        ; TODO
+    endc
+    jp      .donech\1
+
+; E5x - finetune
+.finetune\1
+    if \1 != 4
+        ; TODO
+    endc
+    jp      .donech\1
+
+; E6x - pattern loop
+.patloop\1
+    ; TODO
+    jp      .donech\1
+
+; E7x - tremolo waveform
+.tremwave\1
+    ; TODO
+    jp      .donech\1
+
+; E8x - set panning
+.coarsepan\1
+    ; TODO
+    jp      .donech\1
+
+; E9x - retrigger
+.retrig\1
+    ; TODO
+    jp      .donech\1
+
+; EAx - fine volume slide up
+.finevolup\1
+    ; TODO
+    jp      .donech\1
+
+; EBx - fine volume slide down
+.finevoldown\1
+    ; TODO
+    jp      .donech\1
+
+; ECx - note cut
+.notecut\1
+    ; TODO
+    jp      .donech\1
+
+; EDx - note delay
+.notedelay\1
+    ; TODO
+    jp      .donech\1
+
+; EEx - pattern delay
+.patdelay\1
+    ; TODO
+    jp      .donech\1
+
+; EFx - unused
+
+; Fxx - set speed
+.speed\1
     ld      a,[GBM_SpeedChanged]
     and     a
-    jr      nz,.ch3
-    ld      a,[GBM_Param2]
+    jr      nz,.donech\1
+    ld      a,[GBM_Param\1]
     ld      [GBM_ModuleSpeed],a
     ld      [GBM_ModuleTimer],a
     ld      a,1
     ld      [GBM_SpeedChanged],a
+    ; fall through
     
-.ch3
-    ld      a,[GBM_Command2]
-    cp      4
-    jr      nz,.novib2
-    ld      a,[GBM_Note2]
-    call    GBMod_GetFreq
-    ld      h,d
-    ld      l,e
-    ld      a,[GBM_FreqOffset2]
-    add     h
-    ld      h,a
-    jr      nc,.continue2
-    inc     l
-.continue2
-    ld      a,[GBM_SkipCH2]
-    and     a
-    jr      nz,.novib2
-    ld      a,h
-    ldh     [rNR23],a
-    ld      a,l
-    ldh     [rNR24],a
-.novib2
-    ld      a,[GBM_Command3]
-    ld      hl,.commandTable3
-    add     a
-    add     l
-    ld      l,a
-    jr      nc,.nocarry3
-    inc     h
-.nocarry3
-    ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
-    
-.commandTable3
-    dw      .arp3           ; 0xy - arp
-    dw      .slideup3       ; 1xy - note slide up
-    dw      .slidedown3     ; 2xy - note slide down
-    dw      .ch4            ; 3xy - portamento (NYI)
-    dw      .ch4            ; 4xy - vibrato (handled elsewhere)
-    dw      .ch4            ; 5xy - portamento + volume slide (NYI)
-    dw      .ch4            ; 6xy - vibrato + volume slide (NYI)
-    dw      .ch4            ; 7xy - tremolo (doesn't apply for CH3)
-    dw      .pan3           ; 8xy - panning
-    dw      .ch4            ; 9xy - sample offset (won't be implemented)
-    dw      .volslide3      ; Axy - volume slide
-    dw      .patjump3       ; Bxy - pattern jump
-    dw      .ch4            ; Cxy - set volume (won't be implemented)
-    dw      .patbreak3      ; Dxy - pattern break
-    dw      .extended3      ; Exy - extended commands
-    dw      .speed3         ; Fxy - set module speed
-.commandTableExt3
-    dw      .ch4            ; E0x - unused
-    dw      .ch4            ; E1x - fine portamento up
-    dw      .ch4            ; E2x - fine portamento down
-    dw      .ch4            ; E3x - glissando control
-    dw      .ch4            ; E4x - vibrato waveform
-    dw      .ch4            ; E5x - finetune
-    dw      .ch4            ; E6x - pattern loop
-    dw      .ch4            ; E7x - tremolo waveform
-    dw      .ch4            ; E8x - set panning
-    dw      .ch4            ; E9x - retrigger
-    dw      .ch4            ; EAx - fine volume slide up
-    dw      .ch4            ; EBx - fine volume slide down
-    dw      .ch4            ; ECx - note cut
-    dw      .ch4            ; EDx - note delay
-    dw      .ch4            ; EEx - pattern delay
-    dw      .ch4            ; EFx - unused
-.extended3
-    ld      a,[GBM_Param3]
-    and     $f0
-    swap    a
-    ld      hl,.commandTableExt3
-    add     a
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
-    
-.arp3
-    ld      a,[GBM_Param3]
-    and     a
-    jp      z,.ch4
-    ld      a,[GBM_ArpTick3]
-    inc     a
-    cp      4
-    jr      nz,.noresetarp3
-    ld      a,1
-.noresetarp3
-    ld      [GBM_ArpTick3],a
-    ld      a,[GBM_Param3]
-    ld      b,a
-    ld      a,[GBM_Note3]
-    ld      c,a
-    ld      a,[GBM_ArpTick3]
-    dec     a
-    call    GBMod_DoArp
-    ld      a,[GBM_SkipCH3]
-    and     a
-    jp      nz,.ch4
-    ld      a,d
-    ldh     [rNR33],a
-    ld      a,e
-    ldh     [rNR34],a
-    jp      .ch4
-.slideup3
-    ld      a,[GBM_Param3]
-    ld      b,a
-    ld      e,2
-    call        GBMod_DoPitchSlide
-    ld      a,[GBM_Note3]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq3
-.slidedown3
-    ; read tick speed
-    ld      a,[GBM_Param3]
-    ld      b,a
-    ld      e,2
-    call    GBMod_DoPitchSlide
-    ld      a,[GBM_Note3]
-    call    GBMod_GetFreq2
-    jp      .dosetfreq3
-.pan3
-    ld      a,[GBM_Param3]
-    cp      $55
-    jr      c,.panleft3
-    cp      $aa
-    jr      c,.pancenter3
-.panright3
-    ld      a,$10
-    jr      :+
-.pancenter3
-    xor     a
-    jr      :+
-.panleft3
-    ld      a,$01
-:   rla
-    rla
-    ld      b,a
-    ld      a,[GBM_PanFlags]
-    xor     b
+.donech\1
+    if \1 != 4
+        ld      a,[GBM_Command\1]
+        cp      4
+        jr      nz,.novib\1
+        ld      a,[GBM_Note\1]
+        call    GBMod_GetFreq
+        ld      h,d
+        ld      l,e
+        ld      a,[GBM_FreqOffset\1]
+        add     h
+        ld      h,a
+        jr      nc,.continue\1
+        inc     l
+.continue\1
+        ld      a,[GBM_SkipCH\1]
+        and     a
+        jr      nz,.novib\1
+        ld      a,h
+        ldh     [rNR\13],a
+        ld      a,l
+        ldh     [rNR\14],a
+.novib\1
+    endc
+endm
+
+GBMod_UpdateCommands:
+    ld      a,$ff
     ld      [GBM_PanFlags],a
-    jp      .ch4
-.patbreak3
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    ld      a,[GBM_Param3]
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_PatTablePos]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_PatTableSize]
-    cp      b
-    ld      a,b
-    jr      nz,:+
-    ; TODO: loop position
-    xor     a
-:   ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command3],a
-    ld      [GBM_Param3],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_CurrentBank]
-    add     b
-    ld      [rROMB0],a
-    jp      .done
-.patjump3
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_Param3]
-    ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command3],a
-    ld      [GBM_Param3],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentBank],a
-    jp      .done
-.volslide3
-    ld      a,[GBM_ModuleSpeed]
-    ld      b,a
-    ld      a,[GBM_ModuleTimer]
-    cp      b
-    jr      z,.ch4  ; skip first tick
-    ld      a,[GBM_Param3]
-    cp      $10
-    jr      c,.volslide3_dec
-.volslide3_inc
-    swap    a
-    and     $f
-    ld      b,a
-    ld      a,[GBM_Vol3]
-    add     b
-    jr      nc,.volslide3_nocarry
-    ld      a,$f
-    jr      .volslide3_nocarry
-.volslide3_dec
-    ld      b,a
-    ld      a,[GBM_Vol3]
-    sub     b
-    jr      nc,.volslide3_nocarry
-    xor     a
-.volslide3_nocarry
-    ld      [GBM_Vol3],a
-    rra
-    rra
-    rra
-    and     $f
-    ld      b,a
-    ld      a,[GBM_SkipCH3]
-    and     a
-    jr      nz,.ch4
-    ld      a,b
-    ld      hl,WaveVolTable
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ldh     [rNR32],a
-    ld      a,[GBM_Note3]
-    call    GBMod_GetFreq
-    ld      a,[GBM_SkipCH3]
-    and     a
-    jr      nz,.ch4
-    ld      a,d
-    ldh     [rNR33],a
-    ld      a,e
-    ldh     [rNR34],a
-    jr      .ch4
-.dosetfreq3
-    ld      a,[GBM_SkipCH3]
-    and     a
-    jr      nz,.ch4
-    ld      a,d
-    ldh     [rNR33],a
-    ld      a,e
-    ldh     [rNR34],a
-    jr      .ch4
-.speed3 
-    ld      a,[GBM_SpeedChanged]
-    and     a
-    jr      nz,.ch4
-    ld      a,[GBM_Param3]
-    ld      [GBM_ModuleSpeed],a
-    ld      [GBM_ModuleTimer],a
-    ld      a,1
-    ld      [GBM_SpeedChanged],a
-
-.ch4
-    ld      a,[GBM_Command3]
-    cp      4
-    jr      nz,.novib3
-    ld      a,[GBM_SkipCH3]
-    and     a
-    jp      nz,.novib3
-    ld      a,[GBM_Note3]
-    call    GBMod_GetFreq
-    ld      h,d
-    ld      l,e
-    ld      a,[GBM_FreqOffset3]
-    add     h
-    ld      h,a
-    jr      nc,.continue3
-    inc     l
-.continue3
-    ld      a,h
-    ldh     [rNR33],a
-    ld      a,l
-    ldh     [rNR34],a
-.novib3 
-
-
-    ld      a,[GBM_Command4]
-    ld      hl,.commandTable4
-    add     a
-    add     l
-    ld      l,a
-    jr      nc,.nocarry4
-    inc     h
-.nocarry4
-    ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
     
-.commandTable4
-    dw      .arp4           ; 0xy - arp
-    dw      .done           ; 1xy - note slide up (doesn't apply for CH4)
-    dw      .done           ; 2xy - note slide down (doesn't apply for CH4)
-    dw      .done           ; 3xy - portamento (doesn't apply for CH4)
-    dw      .done           ; 4xy - vibrato (doesn't apply for CH4)
-    dw      .done           ; 5xy - portamento + volume slide (doesn't apply for CH4)
-    dw      .done           ; 6xy - vibrato + volume slide (doesn't apply for CH4)
-    dw      .done           ; 7xy - tremolo (NYI)
-    dw      .pan4           ; 8xy - panning
-    dw      .done           ; 9xy - sample offset (won't be implemented)
-    dw      .volslide4      ; Axy - volume slide
-    dw      .patjump4       ; Bxy - pattern jump
-    dw      .done           ; Cxy - set volume (won't be implemented)
-    dw      .patbreak4      ; Dxy - pattern break
-    dw      .extended4      ; Exy - extended commands
-    dw      .speed4         ; Fxy - set module speed
-.commandTableExt4
-    dw      .done           ; E0x - unused
-    dw      .done           ; E1x - fine portamento up
-    dw      .done           ; E2x - fine portamento down
-    dw      .done           ; E3x - glissando control
-    dw      .done           ; E4x - vibrato waveform
-    dw      .done           ; E5x - finetune
-    dw      .done           ; E6x - pattern loop
-    dw      .done           ; E7x - tremolo waveform
-    dw      .done           ; E8x - set panning
-    dw      .done           ; E9x - retrigger
-    dw      .done           ; EAx - fine volume slide up
-    dw      .done           ; EBx - fine volume slide down
-    dw      .done           ; ECx - note cut
-    dw      .done           ; EDx - note delay
-    dw      .done           ; EEx - pattern delay
-    dw      .done           ; EFx - unused
-.extended4
-    ld      a,[GBM_Param4]
-    and     $f0
-    swap    a
-    ld      hl,.commandTableExt4
-    add     a
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl+]
-    ld      h,[hl]
-    ld      l,a
-    jp      hl
-.arp4
-    ld      a,[GBM_Param4]
-    and     a
-    jp      z,.done
-    ld      a,[GBM_ArpTick4]
-    inc     a
-    cp      4
-    jr      nz,.noresetarp4
-    ld      a,1
-.noresetarp4
-    ld      [GBM_ArpTick4],a
-    ld      a,[GBM_Param4]
-    ld      b,a
-    ld      a,[GBM_Note4]
-    ld      c,a
-    ld      a,[GBM_ArpTick4]
-    dec     a
-    call        GBMod_DoArp4
-    ld      hl,NoiseTable
-    add     l
-    ld      l,a
-    jr      nc,.nocarry5
-    inc     h
-.nocarry5
-    ld      a,[hl]
-    ldh     [rNR43],a
-    jp      .done
-.pan4
-    ld      a,[GBM_Param4]
-    cp      $55
-    jr      c,.panleft4
-    cp      $aa
-    jr      c,.pancenter4
-.panright4
-    ld      a,$10
-    jr      :+
-.pancenter4
-    xor     a
-    jr      :+
-.panleft4
-    ld      a,$01
-:   rla
-    rla
-    rla
-    ld      b,a
-    ld      a,[GBM_PanFlags]
-    xor     b
-    ld      [GBM_PanFlags],a
-    jp      .done
-.patbreak4
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    ld      a,[GBM_Param4]
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_PatTablePos]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_PatTableSize]
-    cp      b
-    ld      a,b
-    jr      nz,:+
-    ; TODO: loop position
-    xor     a
-:   ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command4],a
-    ld      [GBM_Param4],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      b,a
-    ld      a,[GBM_CurrentBank]
-    add     b
-    ld      [rROMB0],a
-    jp      .done
-.patjump4
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentRow],a
-    ld      a,[GBM_Param4]
-    ld      [GBM_PatTablePos],a
-    ld      hl,$40f0
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl]
-    ld      [GBM_CurrentPattern],a
-    xor     a
-    ld      [GBM_Command4],a
-    ld      [GBM_Param4],a
-    ld      a,[GBM_SongID]
-    inc     a
-    ld      [rROMB0],a
-    xor     a
-    ld      [GBM_CurrentBank],a
-    jp      .done
-.volslide4
-    ld      a,[GBM_ModuleSpeed]
-    ld      b,a
-    ld      a,[GBM_ModuleTimer]
-    cp      b
-    jr      z,.done ; skip first tick
-
-    ld      a,[GBM_Param4]
-    cp      $10
-    jr      c,.volslide4_dec
-.volslide4_inc
-    swap       a
-    and     $f
-    ld      b,a
-    ld      a,[GBM_Vol4]
-    add     b
-    jr      c,:+
-    add     b
-    jr      nc,.volslide4_nocarry
-:   ld      a,$f
-    jr      .volslide4_nocarry
-.volslide4_dec
-    ld      b,a
-    ld      a,[GBM_Vol4]
-    sub     b
-    jr      c,:+
-    sub     b
-    jr      nc,.volslide4_nocarry
-:   xor     a
-.volslide4_nocarry
-    ld      [GBM_Vol4],a
-    rra
-    rra
-    rra
-    and     $f
-    ld      b,a
-    ld      a,[GBM_SkipCH4]
-    and     a
-    jr      nz,.done
-    ld      a,b
-    swap    a
-    ldh     [rNR42],a
-    ld      a,[GBM_Note4]
-    call    GBMod_GetFreq
-    ld      a,[GBM_SkipCH4]
-    and     a
-    jr      nz,.done
-    or      $80
-    ldh     [rNR44],a
-    jr      .done   
-.speed4
-    ld      a,[GBM_SpeedChanged]
-    and     a
-    jr      nz,.done
-    ld      a,[GBM_Param4]
-    ld      [GBM_ModuleSpeed],a
-    ld      [GBM_ModuleTimer],a
-    ld      a,1
-    ld      [GBM_SpeedChanged],a
+    gbm_command_update 1
+    gbm_command_update 2
+    gbm_command_update 3
+    gbm_command_update 4
     
-.done
+.done    
     ld      a,[GBM_PanFlags]
     ldh     [rNR51],a
 
     ld      a,1
     ld      [rROMB0],a
     ret
-    
+
 GBMod_DoArp:
     call    GBMod_DoArp4
     jp      GBMod_GetFreq
@@ -1883,57 +1267,27 @@ GBMod_DoArp4:
 ; TODO: Rewrite
 ; Input: e = current channel
 GBMod_DoVib:
+    ld      d,0
     ld      hl,GBM_Command1
-    call    GBM_AddChannelID
+    add     hl,de
     ld      a,[hl]
     cp      4
     ret     nz  ; return if vibrato is disabled
-    ; get vibrato tick
+    ; TODO
+.done
+    ld      hl,GBM_VibratoPhase1
+    add     hl,de
+    ld      a,[hl]
+    push    hl
     ld      hl,GBM_Param1
-    call    GBM_AddChannelID
-    ld      a,[hl]
-    push    af
-    swap    a
-    cpl
-    and     $f
-    ld      b,a
-    ld      hl,GBM_CmdTick1
-    call    GBM_AddChannelID
-    ld      a,[hl]
-    and     a
-    jr      z,.noexit
-    pop     af
-    dec     [hl]
-    ret
-.noexit
-    ld      [hl],b
-    ; get vibrato depth
-    pop     af
-    and     $f
-    ld      d,a
-    ld      hl,GBM_ArpTick1
-    call    GBM_AddChannelID
-    ld      a,[hl]
-    xor     1
-    ld      [hl],a
-    and     a
-    jr      nz,.noreset2
-    ld      hl,GBM_FreqOffset1
-    call    GBM_AddChannelID16
-    ld      [hl],0
-    ret
-.noreset2
-    ld      hl,GBM_FreqOffset1
-    call    GBM_AddChannelID16
-    ld      a,d
-    rr      d
-    add     d
+    add     hl,de
+    add     [hl]
+    pop     hl
     ld      [hl],a
     ret
-
+    
 ; INPUT: e=channel ID
 GBMod_DoPitchSlide:
-
     push    bc
     push    de
     ; don't do pitch bend on the first tick of a note
@@ -2233,6 +1587,9 @@ wave_Pulse125:  db  $ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; last four 
 WaveVolTable:   
     db  $00,$00,$00,$00,$60,$60,$60,$60,$40,$40,$40,$40,$20,$20,$20,$20
 
+    
+; ================================
+    
 ; ================================
 
 NoiseTable: ; taken from deflemask
@@ -2241,7 +1598,7 @@ NoiseTable: ; taken from deflemask
     db  $57,$56,$55,$54,$47,$46,$45,$44,$37,$36,$35,$34,$27,$26,$25,$24
     db  $17,$16,$15,$14,$07,$06,$05,$04,$03,$02,$01,$00
 
-section "GBMod - Frequency table",romx
+section "GBMod - Tables",romx
 FreqTable:
     dw       $2c, $32, $38, $3d, $43, $49, $4e, $54, $5a, $5f, $65, $6b, $70, $76, $7b, $81, $87, $8c, $92, $97 ; C-2
     dw       $9d, $a2, $a7, $ad, $b2, $b8, $bd, $c2, $c8, $cd, $d2, $d8, $dd, $e2, $e7, $ed, $f2, $f7, $fc,$102 ; C#2
@@ -2327,6 +1684,55 @@ FreqTable:
     dw      $7ed,$7ed,$7ed,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee,$7ee ; A-8
     dw      $7ee,$7ee,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef ; A#8
     dw      $7ef,$7ef,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0 ; B-8
+
+
+VibTableSine:
+    for n,16
+        db mul(  0, (div(n, 15)))
+        db mul( 24, (div(n, 15)))
+        db mul( 49, (div(n, 15)))
+        db mul( 74, (div(n, 15)))
+        db mul( 97, (div(n, 15)))
+        db mul(120, (div(n, 15)))
+        db mul(141, (div(n, 15)))
+        db mul(161, (div(n, 15)))
+        db mul(180, (div(n, 15)))
+        db mul(197, (div(n, 15)))
+        db mul(212, (div(n, 15)))
+        db mul(224, (div(n, 15)))
+        db mul(235, (div(n, 15)))
+        db mul(244, (div(n, 15)))
+        db mul(250, (div(n, 15)))
+        db mul(253, (div(n, 15)))
+        db mul(255, (div(n, 15)))
+        db mul(253, (div(n, 15)))
+        db mul(250, (div(n, 15)))
+        db mul(244, (div(n, 15)))
+        db mul(235, (div(n, 15)))
+        db mul(224, (div(n, 15)))
+        db mul(212, (div(n, 15)))
+        db mul(197, (div(n, 15)))
+        db mul(180, (div(n, 15)))
+        db mul(161, (div(n, 15)))
+        db mul(141, (div(n, 15)))
+        db mul(120, (div(n, 15)))
+        db mul( 97, (div(n, 15)))
+        db mul( 74, (div(n, 15)))
+        db mul( 49, (div(n, 15)))
+        db mul( 24, (div(n, 15)))
+    endr
+VibTableSawtooth:
+    for n,16
+        for i,0,32
+            db  mul((i * 8),div(n,15))
+        endr
+    endr
+VibTableSquare:
+    for n,16
+        for i,0,32
+            db  mul(255, div(n, 15))
+        endr
+    endr
         
 ; ================
 ; Player variables
@@ -2383,6 +1789,19 @@ GBM_NewNote4:       ds  1
 GBM_FreqOffset1:    ds  2
 GBM_FreqOffset2:    ds  2
 GBM_FreqOffset3:    ds  2
+
+GBM_VibratoMode1:   ds  1
+GBM_VibratoMode2:   ds  1
+GBM_VibratoMode3:   ds  1
+GBM_VibratoPhase1:  ds  1
+GBM_VibratoPhase2:  ds  1
+GBM_VibratoPhase3:  ds  1
+GBM_VibratoSpeed1:  ds  1
+GBM_VibratoSpeed2:  ds  1
+GBM_VibratoSpeed3:  ds  1
+GBM_VibratoDepth1:  ds  1
+GBM_VibratoDepth2:  ds  1
+GBM_VibratoDepth3:  ds  1
 
 GBM_Vol1:           ds  1
 GBM_Vol2:           ds  1

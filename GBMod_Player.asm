@@ -161,11 +161,11 @@ GBMod_Update:
     
     ; anything that needs to be updated on a per-frame basis should be put here
     ld      e,0
-    call    GBMod_DoVib ; pulse 1 vibrato
+    call    GBMod_DoModulation ; pulse 1 vibrato
     inc     e
-    call    GBMod_DoVib ; pulse 2 vibrato
+    call    GBMod_DoModulation ; pulse 2 vibrato
     inc     e
-    call    GBMod_DoVib ; wave vibrato
+    call    GBMod_DoModulation ; wave vibrato
 
     ld      a,[GBM_TickTimer]
     dec     a
@@ -549,7 +549,7 @@ GBMod_Update:
     jr      nz,.skipvol3
     ld      a,b
     ldh     [rNR32],a
-    set     7,e
+    ;set     7,e
 .skipvol3
     ld      [GBM_OldVol3],a
     ; ch3 wave
@@ -780,7 +780,7 @@ GBMod_Update:
     and     $f
     ld      [GBM_CurrentBank],a
 .done
-    
+
 macro gbm_command_update
     ld      a,[GBM_Command\1]
     ld      hl,.commandTable\1
@@ -827,17 +827,18 @@ macro gbm_command_update
     dw      .notedelay\1        ; EDx - note delay
     dw      .patdelay\1         ; EEx - pattern delay
     dw      .donech\1           ; EFx - unused
+
+; Exy - extended commands
 .extended\1
     ld      a,[GBM_Param\1]
     and     $f0
     swap    a
     ld      hl,.commandTableExt\1
     add     a
-    add     l
-    ld      l,a
-    jr      nc,:+
-    inc     h
-:   ld      a,[hl+]
+    ld      c,a
+    ld      b,0
+    add     hl,bc
+    ld      a,[hl+]
     ld      h,[hl]
     ld      l,a
     jp      hl
@@ -904,7 +905,16 @@ macro gbm_command_update
 ; 4xy - arpeggio
 .vibrato\1
     if \1 != 4
-        ; TODO
+        ld      a,[GBM_Param\1]
+        and     a
+        jp      z,.donech\1
+        ld      b,a
+        and     $f
+        ld      [GBM_ModulationDepth\1],a
+        ld      a,b
+        swap    a
+        and     $f
+        ld      [GBM_ModulationSpeed\1],a
         jp      .donech\1
     endc
 
@@ -936,12 +946,22 @@ macro gbm_command_update
     
 ; 7xy - tremolo
 .tremolo\1
-    ; TODO
-    jp      .donech1
+    ld      a,[GBM_Param\1]
+    and     a
+    jp      z,.donech\1
+    ld      b,a
+    and     $f
+    ld      [GBM_ModulationDepth\1],a
+    ld      a,b
+    swap    a
+    and     $f
+    ld      [GBM_ModulationSpeed\1],a
+    jp      .donech\1
 
 ; 8xy - panning
 .pan\1
     ld      a,[GBM_Param\1]
+.pan\1b
     cp      $55
     jr      c,.panleft\1
     cp      $aa
@@ -1119,7 +1139,9 @@ macro gbm_command_update
 ; E4x - vibrato waveform
 .vibwave\1
     if \1 != 4
-        ; TODO
+        ld      a,[GBM_Param\1]
+        and     3
+        ld      [GBM_ModulationMode\1],a
     endc
     jp      .donech\1
 
@@ -1138,12 +1160,19 @@ macro gbm_command_update
 ; E7x - tremolo waveform
 .tremwave\1
     ; TODO
+    ld      a,[GBM_Param\1]
+    and     3
+    ld      [GBM_ModulationMode\1],a
     jp      .donech\1
 
 ; E8x - set panning
 .coarsepan\1
-    ; TODO
-    jp      .donech\1
+    ld      a,[GBM_Param\1]
+    and     $f
+    ld      b,a
+    swap    a
+    or      b
+    jp      .pan\1b
 
 ; E9x - retrigger
 .retrig\1
@@ -1195,21 +1224,16 @@ macro gbm_command_update
         cp      4
         jr      nz,.novib\1
         ld      a,[GBM_Note\1]
-        call    GBMod_GetFreq
-        ld      h,d
-        ld      l,e
-        ld      a,[GBM_FreqOffset\1]
-        add     h
-        ld      h,a
-        jr      nc,.continue\1
-        inc     l
+        ld      e,\1-1
+        call    GBMod_GetFreq2
 .continue\1
         ld      a,[GBM_SkipCH\1]
         and     a
         jr      nz,.novib\1
-        ld      a,h
+        ld      a,d
         ldh     [rNR\13],a
-        ld      a,l
+        ld      a,e
+        and     $7
         ldh     [rNR\14],a
 .novib\1
     endc
@@ -1227,9 +1251,6 @@ GBMod_UpdateCommands:
 .done    
     ld      a,[GBM_PanFlags]
     ldh     [rNR51],a
-
-    ld      a,1
-    ld      [rROMB0],a
     ret
 
 GBMod_DoArp:
@@ -1264,22 +1285,90 @@ GBMod_DoArp4:
     add     b
     ret
 
-; TODO: Rewrite
 ; Input: e = current channel
-GBMod_DoVib:
+GBMod_DoModulation:
     ld      d,0
     ld      hl,GBM_Command1
     add     hl,de
     ld      a,[hl]
     cp      4
-    ret     nz  ; return if vibrato is disabled
+    jr      z,.vibrato
+    cp      7
+    jr      z,.tremolo
+    ; TODO: vibrato + volume slide
+    ret
+.vibrato
+    
+    ld      a,bank(VibTables)
+    ld      [rROMB0],a
+
+    ld      hl,GBM_ModulationPhase1
+    add     hl,de
+    ld      a,[hl]
+    and     $7e
+    ld      c,a
+    ld      b,0
+    jr      nc,:+
+    inc     b
+:
+    ld      hl,GBM_ModulationDepth1
+    add     hl,de
+    ld      a,[hl]
+    rra
+    and     $f
+    ld      l,a
+    ld      h,0
+    add     hl,hl   ; x2
+    add     hl,hl   ; x4
+    add     hl,hl   ; x8
+    add     hl,hl   ; x16
+    add     hl,hl   ; x32
+    add     hl,hl   ; x64
+    add     hl,bc
+    
+    push    hl
+    ld      hl,GBM_ModulationMode1
+    add     hl,de
+    ld      a,[hl]
+    ld      c,a
+    ld      b,0
+    ld      hl,VibTablePtrs
+    add     hl,bc
+    add     hl,bc
+    ld      a,[hl+]
+    ld      h,[hl]
+    ld      l,a
+    pop     bc
+    add     hl,bc
+    ld      a,[hl+]
+    ld      c,a
+    ld      a,[hl]
+    ld      b,a
+        
+    ld      hl,GBM_FreqOffset1
+    add     hl,de
+    add     hl,de
+    ld      [hl],c
+    inc     hl
+    ld      [hl],b
+    
+.donevib
+    ld      a,[GBM_SongID]
+    inc     a
+    ld      b,a
+    ld      a,[GBM_CurrentBank]
+    add     b
+    ld      [rROMB0],a
+    jr      .done
+.tremolo
     ; TODO
+    ; fall through
 .done
-    ld      hl,GBM_VibratoPhase1
+    ld      hl,GBM_ModulationPhase1
     add     hl,de
     ld      a,[hl]
     push    hl
-    ld      hl,GBM_Param1
+    ld      hl,GBM_ModulationSpeed1
     add     hl,de
     add     [hl]
     pop     hl
@@ -1409,6 +1498,7 @@ GBMod_GetFreq2:
     call    GBM_AddChannelID16
     ld      a,[hl+]
     ld      d,[hl]
+    and     $fe
     ld      e,a
     ld      l,c
     ld      h,0
@@ -1567,6 +1657,13 @@ GBM_HandlePageBoundaryBackwards:
     pop     af
     ret
 
+GBM_ZombieVolume:
+    rept    16
+        ldh     [c],a
+    endr
+    ld      a,b
+    ret
+    
 GBM_PulseWaves:
     dw  wave_Pulse125,wave_Pulse25,wave_Pulse50,wave_Pulse75
     dw  $4030,$4040,$4050,$4060
@@ -1589,7 +1686,7 @@ WaveVolTable:
 
     
 ; ================================
-    
+
 ; ================================
 
 NoiseTable: ; taken from deflemask
@@ -1685,52 +1782,97 @@ FreqTable:
     dw      $7ee,$7ee,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef,$7ef ; A#8
     dw      $7ef,$7ef,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0,$7f0 ; B-8
 
+VibTables:
+
+VibTablePtrs:
+    dw VibTableSine
+    dw VibTableSawtooth
+    dw VibTableSquare
 
 VibTableSine:
     for n,16
-        db mul(  0, (div(n, 15)))
-        db mul( 24, (div(n, 15)))
-        db mul( 49, (div(n, 15)))
-        db mul( 74, (div(n, 15)))
-        db mul( 97, (div(n, 15)))
-        db mul(120, (div(n, 15)))
-        db mul(141, (div(n, 15)))
-        db mul(161, (div(n, 15)))
-        db mul(180, (div(n, 15)))
-        db mul(197, (div(n, 15)))
-        db mul(212, (div(n, 15)))
-        db mul(224, (div(n, 15)))
-        db mul(235, (div(n, 15)))
-        db mul(244, (div(n, 15)))
-        db mul(250, (div(n, 15)))
-        db mul(253, (div(n, 15)))
-        db mul(255, (div(n, 15)))
-        db mul(253, (div(n, 15)))
-        db mul(250, (div(n, 15)))
-        db mul(244, (div(n, 15)))
-        db mul(235, (div(n, 15)))
-        db mul(224, (div(n, 15)))
-        db mul(212, (div(n, 15)))
-        db mul(197, (div(n, 15)))
-        db mul(180, (div(n, 15)))
-        db mul(161, (div(n, 15)))
-        db mul(141, (div(n, 15)))
-        db mul(120, (div(n, 15)))
-        db mul( 97, (div(n, 15)))
-        db mul( 74, (div(n, 15)))
-        db mul( 49, (div(n, 15)))
-        db mul( 24, (div(n, 15)))
+        dw -mul(  0, (div(n, 15)))
+        dw -mul( 24, (div(n, 15)))
+        dw -mul( 49, (div(n, 15)))
+        dw -mul( 74, (div(n, 15)))
+        dw -mul( 97, (div(n, 15)))
+        dw -mul(120, (div(n, 15)))
+        dw -mul(141, (div(n, 15)))
+        dw -mul(161, (div(n, 15)))
+        dw -mul(180, (div(n, 15)))
+        dw -mul(197, (div(n, 15)))
+        dw -mul(212, (div(n, 15)))
+        dw -mul(224, (div(n, 15)))
+        dw -mul(235, (div(n, 15)))
+        dw -mul(244, (div(n, 15)))
+        dw -mul(250, (div(n, 15)))
+        dw -mul(253, (div(n, 15)))
+        dw -mul(255, (div(n, 15)))
+        dw -mul(253, (div(n, 15)))
+        dw -mul(250, (div(n, 15)))
+        dw -mul(244, (div(n, 15)))
+        dw -mul(235, (div(n, 15)))
+        dw -mul(224, (div(n, 15)))
+        dw -mul(212, (div(n, 15)))
+        dw -mul(197, (div(n, 15)))
+        dw -mul(180, (div(n, 15)))
+        dw -mul(161, (div(n, 15)))
+        dw -mul(141, (div(n, 15)))
+        dw -mul(120, (div(n, 15)))
+        dw -mul( 97, (div(n, 15)))
+        dw -mul( 74, (div(n, 15)))
+        dw -mul( 49, (div(n, 15)))
+        dw -mul( 24, (div(n, 15)))
+        dw  mul(  0, (div(n, 15)))
+        dw  mul( 24, (div(n, 15)))
+        dw  mul( 49, (div(n, 15)))
+        dw  mul( 74, (div(n, 15)))
+        dw  mul( 97, (div(n, 15)))
+        dw  mul(120, (div(n, 15)))
+        dw  mul(141, (div(n, 15)))
+        dw  mul(161, (div(n, 15)))
+        dw  mul(180, (div(n, 15)))
+        dw  mul(197, (div(n, 15)))
+        dw  mul(212, (div(n, 15)))
+        dw  mul(224, (div(n, 15)))
+        dw  mul(235, (div(n, 15)))
+        dw  mul(244, (div(n, 15)))
+        dw  mul(250, (div(n, 15)))
+        dw  mul(253, (div(n, 15)))
+        dw  mul(255, (div(n, 15)))
+        dw  mul(253, (div(n, 15)))
+        dw  mul(250, (div(n, 15)))
+        dw  mul(244, (div(n, 15)))
+        dw  mul(235, (div(n, 15)))
+        dw  mul(224, (div(n, 15)))
+        dw  mul(212, (div(n, 15)))
+        dw  mul(197, (div(n, 15)))
+        dw  mul(180, (div(n, 15)))
+        dw  mul(161, (div(n, 15)))
+        dw  mul(141, (div(n, 15)))
+        dw  mul(120, (div(n, 15)))
+        dw  mul( 97, (div(n, 15)))
+        dw  mul( 74, (div(n, 15)))
+        dw  mul( 49, (div(n, 15)))
+        dw  mul( 24, (div(n, 15)))
     endr
 VibTableSawtooth:
     for n,16
+        for i,-32,0
+            dw mul((-i * 8), div(n, 15))
+        endr
         for i,0,32
-            db  mul((i * 8),div(n,15))
+            dw  -mul((i * 8), div(n, 15))
         endr
     endr
+
 VibTableSquare:
     for n,16
         for i,0,32
-            db  mul(255, div(n, 15))
+            dw -low(mul(255, div(n, 15)))
+        endr
+        for i,0,32
+            dw low(mul(255, div(n, 15)))
         endr
     endr
         
@@ -1790,18 +1932,23 @@ GBM_FreqOffset1:    ds  2
 GBM_FreqOffset2:    ds  2
 GBM_FreqOffset3:    ds  2
 
-GBM_VibratoMode1:   ds  1
-GBM_VibratoMode2:   ds  1
-GBM_VibratoMode3:   ds  1
-GBM_VibratoPhase1:  ds  1
-GBM_VibratoPhase2:  ds  1
-GBM_VibratoPhase3:  ds  1
-GBM_VibratoSpeed1:  ds  1
-GBM_VibratoSpeed2:  ds  1
-GBM_VibratoSpeed3:  ds  1
-GBM_VibratoDepth1:  ds  1
-GBM_VibratoDepth2:  ds  1
-GBM_VibratoDepth3:  ds  1
+; tremolo/vibrato parameters
+GBM_ModulationMode1:   ds  1
+GBM_ModulationMode2:   ds  1
+GBM_ModulationMode3:   ds  1
+GBM_ModulationMode4:   ds  1
+GBM_ModulationPhase1:  ds  1
+GBM_ModulationPhase2:  ds  1
+GBM_ModulationPhase3:  ds  1
+GBM_ModulationPhase4:  ds  1
+GBM_ModulationSpeed1:  ds  1
+GBM_ModulationSpeed2:  ds  1
+GBM_ModulationSpeed3:  ds  1
+GBM_ModulationSpeed4:  ds  1
+GBM_ModulationDepth1:  ds  1
+GBM_ModulationDepth2:  ds  1
+GBM_ModulationDepth3:  ds  1
+GBM_ModulationDepth4:  ds  1
 
 GBM_Vol1:           ds  1
 GBM_Vol2:           ds  1

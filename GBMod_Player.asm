@@ -2,8 +2,6 @@
 ; GBMod replay routine
 ; ================================================================
 
-; NOTE: For best results, place player code in ROM0.
-
 ; ===================
 ; Compatibility flags
 ; ===================
@@ -11,7 +9,13 @@
 ; Whether or not to use "zombie mode" for volume.
 ; This makes SFX integration non-trivial and additionally
 ; may not work on all hardware models or emulators.
+; CURRENTLY BROKEN - DO NOT USE
 def USE_ZOMBIE_MODE = 0
+
+; Whether or not to allow playback of songs larger than a single ROM bank.
+; This will result in slightly increased CPU usage, and a small CPU
+; usage spike whenever a ROM bank boundary is crossed.
+def ENABLE_BIG_SONGS = 1
 
 ; ===========
 ; Player code
@@ -150,9 +154,9 @@ GBMod_Update:
     jr      z,:+    ; skip ahead if timer is disabled
     ldh     a,[rKEY1]
     cp      $ff
-    jr      z,:+
+    jr      z,:+    ; if KEY1 returns $FF, we're not on GBC - bail out
     bit     7,a
-    jr      z,:+
+    jr      z,:+    ; if bit 7 of KEY1 is 0, double speed mode is off - bail out
     ld      hl,GBM_OddTick
     inc     [hl]
     bit     0,[hl]
@@ -161,11 +165,13 @@ GBMod_Update:
     
     ; anything that needs to be updated on a per-frame basis should be put here
     ld      e,0
-    call    GBMod_DoModulation ; pulse 1 vibrato
+    call    GBMod_DoModulation ; pulse 1 vibrato + tremolo
     inc     e
-    call    GBMod_DoModulation ; pulse 2 vibrato
+    call    GBMod_DoModulation ; pulse 2 vibrato + tremolo
     inc     e
     call    GBMod_DoModulation ; wave vibrato
+    ; inc     e
+    ; call    GBMod_DoModulation ; noise tremolo
 
     ld      a,[GBM_TickTimer]
     dec     a
@@ -202,7 +208,7 @@ GBMod_Update:
     bit     7,a
     jr      z,:+
     sub     $40
-    push        af
+    push    af
     ld      a,[GBM_SongID]
     inc     a
     ld      b,a
@@ -246,27 +252,44 @@ GBMod_Update:
 
     ; ch1 note
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     push    af
     cp      $ff
     jp      z,.skip1
     cp      $fe
     jr      nz,.nocut1
-    xor     a
-    ld      [GBM_Vol1],a
-    ldh     [rNR12],a
-    ld      a,%10000000
-    ldh     [rNR14],a
+    if USE_ZOMBIE_MODE
+        xor     a
+        ld      [GBM_Vol1],a
+        ld      [GBM_OldVol1],a
+        ld      a,$f0
+        ldh     [rNR12],a
+        ldh     [rNR14],a
+        ld      a,$18
+        ldh     [rNR12],a
+    else
+        xor     a
+        ld      [GBM_Vol1],a
+        ldh     [rNR12],a
+        ld      a,%10000000
+        ldh     [rNR14],a
+    endc
     jp      .skip1
 .nocut1
     inc     hl
-    bit     7,h
-    call        nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      a,[hl]
     dec     hl
-    bit     6,h
-    call    z,GBM_HandlePageBoundaryBackwards
+    if ENABLE_BIG_SONGS
+        bit     6,h
+        call    z,GBM_HandleBankBoundaryBackwards
+    endc
 ;   cp  1
 ;   jr  z,.noreset1
 ;   cp  2
@@ -283,6 +306,10 @@ GBMod_Update:
     ld      e,0
     call    GBMod_GetFreq2
     ; ch1 volume
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_Vol1]
+        ld      [GBM_OldVol1],a
+    endc
     ld      a,[GBM_SkipCH1]
     and     a
     jr      nz,.skipvol1
@@ -295,15 +322,39 @@ GBMod_Update:
     rla
     rla
     ld      [GBM_Vol1],a
-    ld      a,b
-    swap    a
-    ldh     [rNR12],a
-    set     7,e
+    
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_OldVol1]
+        sub     b
+        cpl
+        and     $f
+        push    hl
+        ld      l,a
+        ld      h,0
+        ld      bc,GBM_ZombieVolume
+        add     hl,bc
+        ld      c,low(rNR12)
+        ld      a,$18
+        call    .hl1
+        pop     hl
+    else
+        ld      a,b
+        swap    a
+        ldh     [rNR12],a
+        set     7,e
+    endc
+    if USE_ZOMBIE_MODE
+        jr      .skipvol1
+.hl1
+        jp      hl
+    endc
 .skipvol1
     ; ch1 pulse
-    ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    ld      a,[hl+] 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      b,a
     ld      a,[GBM_SkipCH1]
     and     a
@@ -321,15 +372,19 @@ GBMod_Update:
     push    de
     ; ch1 command
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      [GBM_Command1],a
     ld      e,a
     ; ch1 parameter
     ld      a,[hl+]
     ld      d,a
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     and     a               ; is parameter 00?
     jr      nz,:+           ; if not, write parameter
     ld      a,e
@@ -370,27 +425,45 @@ GBMod_Update:
 .ch2
     ; ch2 note
     ld      a,[hl+]
-    bit     7,h
-    call   nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     push    af
     cp      $ff
     jp      z,.skip2
     cp      $fe
     jr      nz,.nocut2
     xor     a
-    ld      [GBM_Vol2],a
-    ldh     [rNR22],a
-    ld      a,%10000000
-    ldh     [rNR24],a
+    if USE_ZOMBIE_MODE
+        xor     a
+        ld      [GBM_Vol2],a
+        ld      [GBM_OldVol2],a
+        ld      a,$f0
+        ldh     [rNR22],a
+        ldh     [rNR24],a
+        ld      a,$18
+        ldh     [rNR22],a
+    else
+        xor     a
+        ld      [GBM_Vol2],a
+        ldh     [rNR22],a
+        ld      a,%10000000
+        ldh     [rNR24],a
+    endc
     jp      .skip2
 .nocut2
     inc     hl
     ld      a,[hl]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     dec     hl
-    bit     6,h
-    call    z,GBM_HandlePageBoundaryBackwards
+    if ENABLE_BIG_SONGS
+        bit     6,h
+        call    z,GBM_HandleBankBoundaryBackwards
+    endc
 ;   cp      1
 ;   jr      z,.noreset2
 ;   cp      2
@@ -407,6 +480,10 @@ GBMod_Update:
     ld      e,1
     call    GBMod_GetFreq2
     ; ch2 volume
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_Vol2]
+        ld      [GBM_OldVol2],a
+    endc
     ld      a,[GBM_SkipCH2]
     and     a
     jr      nz,.skipvol2
@@ -419,15 +496,39 @@ GBMod_Update:
     rla
     rla
     ld      [GBM_Vol2],a
-    ld      a,b
-    swap    a
-    ldh     [rNR22],a
+    
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_OldVol2]
+        sub     b
+        cpl
+        and     $f
+        push    hl
+        ld      l,a
+        ld      h,0
+        ld      bc,GBM_ZombieVolume
+        add     hl,bc
+        ld      c,low(rNR22)
+        ld      a,$18
+        call    .hl2
+        pop     hl
+    else
+        ld      a,b
+        swap    a
+        ldh     [rNR22],a
+    endc
     set     7,e
+    if USE_ZOMBIE_MODE
+        jr      .skipvol2
+.hl2
+        jp      hl
+    endc
 .skipvol2
     ; ch2 pulse
     ld      a,[hl+]
-    bit     7,h
-    call   nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      b,a
     ld      a,[GBM_SkipCH2]
     and     a
@@ -445,15 +546,17 @@ GBMod_Update:
     push    de
     ; ch2 command
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      [GBM_Command2],a
     ld      e,a
     ; ch2 parameter
     ld      a,[hl+]
     ld      d,a
     bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    call    nz,GBM_HandleBankBoundary
     and     a               ; is parameter 00?
     jr      nz,:+           ; if not, write parameter
     ld      a,e
@@ -495,8 +598,10 @@ GBMod_Update:
     ; ch3 note
 .note3
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     push    af
     cp      $ff
     jp      z,.skip3
@@ -507,12 +612,16 @@ GBMod_Update:
     ldh     [rNR32],a
 .nocut3
     inc     hl
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      a,[hl]
     dec     hl
-    bit     6,h
-    call    z,GBM_HandlePageBoundaryBackwards
+    if ENABLE_BIG_SONGS
+        bit     6,h
+        call    z,GBM_HandleBankBoundaryBackwards
+    endc
 ;   cp      1
 ;   jr      z,.noreset3
 ;   cp      2
@@ -554,8 +663,10 @@ GBMod_Update:
     ld      [GBM_OldVol3],a
     ; ch3 wave
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     dec     a
     and     $f
     cp      15
@@ -575,15 +686,19 @@ GBMod_Update:
     push    de
     ; ch3 command
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      [GBM_Command3],a
     ld      e,a
     ; ch3 parameter
     ld      a,[hl+]
     ld      d,a
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     and     a               ; is parameter 00?
     jr      nz,:+           ; if not, write parameter
     ld      a,e
@@ -626,23 +741,38 @@ GBMod_Update:
     ld      l,a
     jr      nc,.ch4
     inc     h
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     
 .ch4
     ; ch4 note
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     cp      $ff
     jp      z,.skip4
     cp      $fe
     jr      nz,.freq4
-    xor     a
-    ld      [GBM_Vol4],a
-    ldh     [rNR42],a
-    ld      a,%10000000
-    ldh     [rNR44],a
+    if USE_ZOMBIE_MODE
+        xor     a
+        ld      [GBM_Vol4],a
+        ld      [GBM_OldVol4],a
+        ld      a,$f0
+        ldh     [rNR42],a
+        ldh     [rNR44],a
+        ld      a,$18
+        ldh     [rNR42],a
+    else
+        xor     a
+        ld      [GBM_Vol4],a
+        ldh     [rNR42],a
+        ld      a,%10000000
+        ldh     [rNR44],a
+    endc
     ld      a,1
     ld      [GBM_NewNote4],a
     jp      .skip4
@@ -657,11 +787,17 @@ GBMod_Update:
     inc     h
 .nocarry
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     ld      d,a
     pop     hl
     ; ch4 volume
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_Vol4]
+        ld      [GBM_OldVol4],a
+    endc
     ld      a,[GBM_SkipCH4]
     and     a
     jr      nz,.skipvol4
@@ -674,15 +810,39 @@ GBMod_Update:
     rla
     rla
     ld      [GBM_Vol4],a
-    ld      a,b
-    swap    a
-    ldh     [rNR42],a
+    
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_OldVol4]
+        sub     b
+        cpl
+        and     $f
+        push    hl
+        ld      l,a
+        ld      h,0
+        ld      bc,GBM_ZombieVolume
+        add     hl,bc
+        ld      c,low(rNR42)
+        ld      a,$18
+        call    .hl4
+        pop     hl
+    else
+        ld      a,b
+        swap    a
+        ldh     [rNR42],a
+    endc
     set     7,e
+    if USE_ZOMBIE_MODE
+        jr      .skipvol4
+.hl4
+        jp      hl
+    endc
 .skipvol4
     ; ch4 mode
     ld      a,[hl+]
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     and     a
     jr      z,.nomode
     dec     a
@@ -696,14 +856,16 @@ GBMod_Update:
     push    de
     ld      a,[hl+]
     bit     7,h
-    call    nz,GBM_HandlePageBoundary 
+    call    nz,GBM_HandleBankBoundary 
     ld      [GBM_Command4],a
     ld      e,a
     ; ch1 parameter
     ld      a,[hl+]
     ld      d,a
-    bit     7,h
-    call    nz,GBM_HandlePageBoundary
+    if ENABLE_BIG_SONGS
+        bit     7,h
+        call    nz,GBM_HandleBankBoundary 
+    endc
     and     a               ; is parameter 00?
     jr      nz,:+           ; if not, write parameter
     ld      a,e
@@ -989,6 +1151,10 @@ macro gbm_command_update
     ld      a,[GBM_ModuleTimer]
     cp      b
     jp      z,.donech\1  ; skip first tick
+    if USE_ZOMBIE_MODE
+        ld      a,[GBM_Vol\1]
+        ld      [GBM_OldVol\1],a
+    endc
     ld      a,[GBM_Param\1]
     cp      $10
     jr      c,.volslide\1_dec
@@ -1023,17 +1189,35 @@ macro gbm_command_update
     rra
     and     $f
     if \1 != 3
-        swap    a
-        ldh     [rNR\12],a
+        if USE_ZOMBIE_MODE
+            ld      a,[GBM_OldVol\1]
+            sub     b
+            cpl
+            and     $f
+            ld      l,a
+            ld      h,0
+            ld      bc,GBM_ZombieVolume
+            add     hl,bc
+            ld      c,low(rNR\12)
+            ld      a,$18
+            call    .hl\1
+        else
+            swap    a
+            ldh     [rNR\12],a
+        endc
         if \1 != 4
             ld      a,[GBM_Note\1]
             call    GBMod_GetFreq
             ld      a,d
             ldh     [rNR\13],a
             ld      a,e
-            or      $80
+            if !USE_ZOMBIE_MODE
+                or      $80
+            endc
         else
-            ld      a,$80
+            if !USE_ZOMBIE_MODE
+                xor     a
+            endc
         endc
         ldh     [rNR\14],a
     else
@@ -1049,7 +1233,9 @@ macro gbm_command_update
         ldh     [rNR\14],a
     endc
     jp      .donech\1
-
+.hl\1
+    jp      hl
+    
 ; Bxx - pattern jump
 .patjump\1
     ld      a,[GBM_SongID]
@@ -1623,7 +1809,8 @@ GBM_CopyWave:
     ldh     [rNR51],a
     ret
 
-GBM_HandlePageBoundary:
+if ENABLE_BIG_SONGS
+GBM_HandleBankBoundary:
     push    af
     push    bc
     ld      a,[GBM_CurrentBank]
@@ -1639,7 +1826,7 @@ GBM_HandlePageBoundary:
     pop     af
     ret
     
-GBM_HandlePageBoundaryBackwards:
+GBM_HandleBankBoundaryBackwards:
     push    af
     push    bc
     ld      a,[GBM_CurrentBank]
@@ -1650,19 +1837,19 @@ GBM_HandlePageBoundaryBackwards:
     inc     a
     add     b
     ld      [rROMB0],a
-    ld      a,h
-    sub     $40
-    ld      h,a
+    ld      h,$7f
     pop     bc
     pop     af
     ret
+endc
 
+if USE_ZOMBIE_MODE
 GBM_ZombieVolume:
     rept    16
         ldh     [c],a
     endr
-    ld      a,b
     ret
+endc
     
 GBM_PulseWaves:
     dw  wave_Pulse125,wave_Pulse25,wave_Pulse50,wave_Pulse75
@@ -1981,77 +2168,3 @@ GBM_TMA:            ds  1
 GBM_TAC:            ds  1
 GBM_OddTick:        ds  1
 GBM_RAM_End:
-
-; Note values
-def C_2 equ $00
-def C#2 equ $01
-def D_2 equ $02
-def D#2 equ $03
-def E_2 equ $04
-def F_2 equ $05
-def F#2 equ $06
-def G_2 equ $07
-def G#2 equ $08
-def A_2 equ $09
-def A#2 equ $0a
-def B_2 equ $0b
-def C_3 equ $0c
-def C#3 equ $0d
-def D_3 equ $0e
-def D#3 equ $0f
-def E_3 equ $10
-def F_3 equ $11
-def F#3 equ $12
-def G_3 equ $13
-def G#3 equ $14
-def A_3 equ $15
-def A#3 equ $16
-def B_3 equ $17
-def C_4 equ $18
-def C#4 equ $19
-def D_4 equ $1a
-def D#4 equ $1b
-def E_4 equ $1c
-def F_4 equ $1d
-def F#4 equ $1e
-def G_4 equ $1f
-def G#4 equ $20
-def A_4 equ $21
-def A#4 equ $22
-def B_4 equ $23
-def C_5 equ $24
-def C#5 equ $25
-def D_5 equ $26
-def D#5 equ $27
-def E_5 equ $28
-def F_5 equ $29
-def F#5 equ $2a
-def G_5 equ $2b
-def G#5 equ $2c
-def A_5 equ $2d
-def A#5 equ $2e
-def B_5 equ $2f
-def C_6 equ $30
-def C#6 equ $31
-def D_6 equ $32
-def D#6 equ $33
-def E_6 equ $34
-def F_6 equ $35
-def F#6 equ $36
-def G_6 equ $37
-def G#6 equ $38
-def A_6 equ $39
-def A#6 equ $3a
-def B_6 equ $3b
-def C_7 equ $3c
-def C#7 equ $3d
-def D_7 equ $3e
-def D#7 equ $3f
-def E_7 equ $40
-def F_7 equ $41
-def F#7 equ $42
-def G_7 equ $43
-def G#7 equ $44
-def A_7 equ $45
-def A#7 equ $46
-def B_7 equ $47

@@ -2,7 +2,12 @@
 ; GBMod demo ROM
 ; ================================================================
 
-def Easypack = 0
+; Whether or not to build the easypack.
+; This will omit the sample songs, disable the song selector, and
+; automatically start playing from bank 2 (ROM address 0x8000).
+; This allows for easy testing of converted modules without
+; having to rebuild the player each time.
+def BUILD_EASYPACK = 0
 
 ; ================================================================
 ; Project includes
@@ -80,10 +85,10 @@ NintendoLogo:   ; DO NOT MODIFY OR ROM WILL NOT BOOT!!!
     db  $00,$08,$11,$1f,$88,$89,$00,$0e,$dc,$cc,$6e,$e6,$dd,$dd,$d9,$99
     db  $bb,$bb,$67,$63,$6e,$0e,$ec,$cc,$dd,$dc,$99,$9f,$bb,$b9,$33,$3e
 
-ROMTitle:       db  "GBMOD",0,0,0,0,0,0 ; ROM title (11 bytes)
-ProductCode:    db  0,0,0,0             ; product code (4 bytes)
+ROMTitle:       db  "GBMOD DEMO",0      ; ROM title (11 bytes)
+ProductCode:    db  "GBMD"              ; product code (4 bytes)
 GBCSupport:     db  $80                 ; GBC support (0 = DMG only, $80 = DMG/GBC, $C0 = GBC only)
-NewLicenseCode: db  "DS"                ; new license code (2 bytes)
+NewLicenseCode: db  "  "                ; new license code (2 bytes)
 SGBSupport:     db  0                   ; SGB support
 CartType:       db  $19                 ; Cart type, see hardware.inc for a list of values
 ROMSize:        ds  1                   ; ROM size (handled by post-linking tool)
@@ -164,7 +169,7 @@ ProgramStart:
     db  "For best results,   "
     db  "please use a better "
     db  "emulator (such as   "
-    db  "bgb or gambatte) or "
+    db  "BGB or SameBoy) or  "
     db  "run this ROM on real"
     db  "hardware.           "
     db  "                    "
@@ -193,106 +198,95 @@ ProgramStart:
     ld  a,%10010001         ; LCD on + BG on + BG $8000
     ldh [rLCDC],a           ; enable LCD
     
-if Easypack==1
-    ld  a,1
-else
-    xor a
-endc
+    if BUILD_EASYPACK
+        ld  a,1
+    else
+        xor a
+    endc
     call    GBM_LoadModule
     call    DrawSongName
-if Easypack==0
+if BUILD_EASYPACK==0
     call    PrintCPUSpeed
 endc
     ei
     
 MainLoop:
-if  Easypack==0
+    if !BUILD_EASYPACK
     ; draw song id
-    ld  a,[CurrentSong]
-    ld  hl,$9891
-    call    DrawHex
-   
-    ; playback controls
-    ld  a,[sys_btnPress]
-    bit btnUp,a
-    jr  nz,.add16
-    bit btnDown,a
-    jr  nz,.sub16
-    bit btnLeft,a
-    jr  nz,.sub1
-    bit btnRight,a
-    jr  nz,.add1
-    bit btnA,a
-    jr  nz,.loadSong
-    bit btnB,a
-    jr  nz,.stopSong
-    bit btnSelect,a
-    jr  nz,.toggleSpeed
-    jr  .continue
+        ld  a,[CurrentSong]
+        ld  hl,$9891
+        call    DrawHex
+    
+        ; playback controls
+        ld  a,[sys_btnPress]
+        bit btnUp,a
+        jr  nz,.add16
+        bit btnDown,a
+        jr  nz,.sub16
+        bit btnLeft,a
+        jr  nz,.sub1
+        bit btnRight,a
+        jr  nz,.add1
+        bit btnA,a
+        jr  nz,.loadSong
+        bit btnB,a
+        jr  nz,.stopSong
+        bit btnSelect,a
+        jr  nz,.toggleSpeed
+        jr  .continue
 
 .add1
-    ld  a,[CurrentSong]
-    inc a
-    ld  [CurrentSong],a
-    jr  .continue
+        ld  a,[CurrentSong]
+        inc a
+        ld  [CurrentSong],a
+        jr  .continue
 .sub1
-    ld  a,[CurrentSong]
-    dec a
-    ld  [CurrentSong],a
-    jr  .continue
+        ld  a,[CurrentSong]
+        dec a
+        ld  [CurrentSong],a
+        jr  .continue
 .add16
-    ld  a,[CurrentSong]
-    add 16
-    ld  [CurrentSong],a
-    jr  .continue
+        ld  a,[CurrentSong]
+        add 16
+        ld  [CurrentSong],a
+        jr  .continue
 .sub16
-    ld  a,[CurrentSong]
-    sub 16
-    ld  [CurrentSong],a
-    jr  .continue
+        ld  a,[CurrentSong]
+        sub 16
+        ld  [CurrentSong],a
+        jr  .continue
 .loadSong
-    ld  a,[CurrentSong]
-    call    GBM_LoadModule
-    call    DrawSongName
-    jr  .continue
+        ld  a,[CurrentSong]
+        call    GBM_LoadModule
+        call    DrawSongName
+        jr  .continue
 .stopSong
-    call    GBM_Stop
-    ld  hl,str_NoSong
-    ld  de,$98a1
-    ld  b,16
+        call    GBM_Stop
+        ld  hl,str_NoSong
+        ld  de,$98a1
+        ld  b,16
 .stoploop
-    ldh a,[rSTAT]
-    and 2
-    jr  nz,.stoploop
-    ld  a,[hl+]
-    sub 32
-    ld  [de],a
-    inc de
-    dec b
-    jr  nz,.stoploop
-    jr  .continue
+        ldh a,[rSTAT]
+        and 2
+        jr  nz,.stoploop
+        ld  a,[hl+]
+        sub 32
+        ld  [de],a
+        inc de
+        dec b
+        jr  nz,.stoploop
+        jr  .continue
 .toggleSpeed
-    call    DoSpeedSwitch
-    call    PrintCPUSpeed
-    jr  .loadSong
+        call    DoSpeedSwitch
+        call    PrintCPUSpeed
+        jr  .loadSong
     
 .continue
-    call    CheckInput
-endc
+        call    CheckInput
+    endc
     call    DrawSoundVars
     
-    halt                ; wait for VBlank
-    
-;    ld  a,c
-;    ld  hl,MaxRasterTime
-;    cp  [hl]
-;    jr  c,.skip
-;    ld  [hl],c
-;.skip
-;    ld  hl,$9a31        ; raster time display address in VRAM
-;    call    DrawHex     ; draw raster time
-    
-;    call    CheckInput    
+    halt                ; wait for VBlank  
     jp  MainLoop
     
 ; ================================================================
@@ -301,11 +295,11 @@ endc
     
 MainText:
 
-if Easypack==1
+if BUILD_EASYPACK==1
 ;        ####################
     db  "                    "
-    db  "GBMod v2.0 by DevEd "
-    db  "                    "
+    db  "GBMod v3.0 by DevEd "
+    db  "  deved8@gmail.com  "
     db  "                    "
     db  " Now playing:       "
     db  " ????????????????   "
@@ -325,7 +319,7 @@ if Easypack==1
 else
 ;        ####################
     db  "                    "
-    db  "GBMod v2.0 by DevEd "
+    db  "GBMod v3.0 by DevEd "
     db  "  deved8@gmail.com  "
     db  "                    "
     db  " Current song:  $?? "
@@ -346,6 +340,7 @@ else
 endc
 
 str_Normal: db  "NORMAL SPEED"
+.end
 str_Double: db  "DOUBLE SPEED"
 
 Font:   incbin  "Font.1bpp"  ; 1bpp font data
@@ -353,11 +348,11 @@ Font_End:
 
 ; ====================
 
-PrintCPUSpeed:  
+PrintCPUSpeed:
     ldh     a,[rKEY1]
     cp      $ff
-    ret     z
-    ld      b,12
+    ret     z ; bail out if not on GBC or GBA
+    ld      b,str_Normal.end-str_Double
     ld      de,$9a04
     bit     7,a
     jr      nz,.double
@@ -388,13 +383,13 @@ DrawSoundVars:
     call    GetNoteString
     ld  de,$9985
     rept    3
-    ldh a,[rSTAT]
-    and 2
-    jr  nz,@-4
-    ld  a,[hl+]
-    sub 32
-    ld  [de],a
-    inc de
+        ldh a,[rSTAT]
+        and 2
+        jr  nz,@-4
+        ld  a,[hl+]
+        sub " "
+        ld  [de],a
+        inc de
     endr
     jr  .cont1
 .nonote1
@@ -468,8 +463,6 @@ DrawSoundVars:
     ld  a,[GBM_Note3]
     cp  $ff
     jr  z,.nonote3
-;    cp  $80
-;    jr  z,.sample3
     call    GetNoteString
     ld  de,$99c5
     rept    3
@@ -491,16 +484,6 @@ DrawSoundVars:
     ld  [hl+],a
     ld  [hl+],a
     ld  [hl+],a
-;    jr  .cont3
-;.sample3
-;    ldh a,[rSTAT]
-;    and 2
-;    jr  nz,@-4
-;    ld  a,"S"-32
-;    ld  [$99c5],a
-;    ld  a,[GBM_SampleID]
-;    ld  hl,$99c6
-;    call    DrawHex
 .cont3
     ld  a,[GBM_Vol3]
     rra
@@ -596,9 +579,13 @@ MusicNoteStrTable:
     db  "C-6","C#6","D-6","D#6","E-6","F-6","F#6","G-6","G#6","A-6","A#6","B-6"
     db  "C-7","C#7","D-7","D#7","E-7","F-7","F#7","G-7","G#7","A-7","A#7","B-7"
 UnknownNote:    db  "???"
-    
-str_NoSong:
+
+str_NoSong:  
+if !BUILD_EASYPACK
     db  "NO SONG         "
+else
+    db  "NOTHING         " ; this should never be seen
+endc
     
 PrintString:
     ld  de,$9800
@@ -617,7 +604,7 @@ PrintString:
     ld  a,[hl+]
     and a
     ret z
-    sub 32
+    sub " "
     ld  [de],a
     inc de
     jr  .loop
@@ -656,6 +643,7 @@ DoubleSpeed:
     ldh a,[rKEY1]
     bit 7,a         ; already in double speed?
     ret nz          ; if yes, return
+    ; fall through
 DoSpeedSwitch:
     ld  a,%00110000
     ldh [rP1],a
@@ -664,47 +652,6 @@ DoSpeedSwitch:
     stop
     ret
 
-
-; Input: hl = palette data  
-LoadBGPal:
-    ld  a,0
-    call    LoadBGPalLine
-    ld  a,1
-    call    LoadBGPalLine
-    ld  a,2
-    call    LoadBGPalLine
-    ld  a,3
-    call    LoadBGPalLine
-    ld  a,4
-    call    LoadBGPalLine
-    ld  a,5
-    call    LoadBGPalLine
-    ld  a,6
-    call    LoadBGPalLine
-    ld  a,7
-    call    LoadBGPalLine
-    ret
-    
-; Input: hl = palette data  
-LoadObjPal:
-    ld  a,0
-    call    LoadObjPalLine
-    ld  a,1
-    call    LoadObjPalLine
-    ld  a,2
-    call    LoadObjPalLine
-    ld  a,3
-    call    LoadObjPalLine
-    ld  a,4
-    call    LoadObjPalLine
-    ld  a,5
-    call    LoadObjPalLine
-    ld  a,6
-    call    LoadObjPalLine
-    ld  a,7
-    call    LoadObjPalLine
-    ret
-    
 ; Input: hl = palette data
 LoadBGPalLine:
     swap    a   ; \  multiply
@@ -730,33 +677,6 @@ LoadBGPalLine:
     ld  [rBCPD],a
     ld  a,[hl+]
     ld  [rBCPD],a
-    ret
-    
-; Input: hl = palette data
-LoadObjPalLine:
-    swap    a   ; \  multiply
-    rrca        ; /  palette by 8
-    or  $80     ; auto increment
-    push    af
-    WaitForVRAM
-    pop af
-    ld  [rOCPS],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
-    ld  a,[hl+]
-    ld  [rOCPD],a
     ret
 
 Pal_Grayscale:
@@ -813,7 +733,7 @@ DoTimer:
 ; ================================================================
 ; Song data
 ; ================================================================
-if Easypack==0
+if BUILD_EASYPACK==0
 section "Lost In Translation",romx,bank[1]
     incbin  "Modules/LostInTranslation.bin"
 section "Endless Road",romx,bank[2]
@@ -822,8 +742,8 @@ section "Spring",romx,bank[3]
     incbin  "Modules/Spring.bin"
 section "Slime Cave, bank 1",romx,bank[4]
     incbin  "Modules/SlimeCave.bin",0,$4000
-section "Slime Cave, bank 2",romx,bank[5]
-    incbin  "Modules/SlimeCave.bin",$4000
-section "G-Loop End",romx,bank[6]
+section "G-Loop End",romx,bank[5]
     incbin  "Modules/GLoopEnd.bin"
+section "Slime Cave, bank 2",romx,bank[6]
+    incbin  "Modules/SlimeCave.bin",$4000
 endc

@@ -1,3 +1,6 @@
+# Moved
+This project has migrated to [Codeberg](https://codeberg.org/DevEd/GBMod).
+
 # GBMod
 XM converter + player for Game Boy
 
